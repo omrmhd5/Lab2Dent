@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --background: #f4f7f6;
+  --foreground: #1c2422;
+  --surface: #ffffff;
+  --border: #d7e0dd;
+  --muted: #5c6b67;
+  --accent: #0f6e66;
+  --accent-hover: #0c5a54;
+  --accent-soft: #e6f3f1;
+  --danger: #b42318;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --duration-fast: 160ms;
+  --duration-ui: 200ms;
+  --radius: 14px;
+  --shadow-sm: 0 1px 2px rgb(28 36 34 / 0.05);
+  --shadow-md: 0 10px 30px rgb(28 36 34 / 0.08);
+}
+
+html.dark {
+  color-scheme: dark;
+  --background: #111817;
+  --foreground: #eef4f2;
+  --surface: #1a2220;
+  --border: #2d3a37;
+  --muted: #9aada8;
+  --accent: #2a9d92;
+  --accent-hover: #3cb0a5;
+  --accent-soft: #17322f;
+  --danger: #f97066;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 12px 36px rgb(0 0 0 / 0.35);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-arabic: var(--font-noto-arabic);
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+html.dark .photo-frame img {
+  filter: brightness(0.88) saturate(0.92);
+}
+
+html[dir="rtl"] body {
+  font-family:
+    var(--font-noto-arabic), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ui-press {
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.ui-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ui-input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+  padding: 0.75rem 0.9rem;
+  font-size: 1rem;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.ui-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.ui-press:hover:not(:disabled) {
+    color: var(--accent);
+  }
+
+  a.ui-press.bg-accent:hover,
+  button.ui-press.bg-accent:hover:not(:disabled) {
+    background: var(--accent-hover);
+    color: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-press,
+  .ui-input {
+    transition: none;
+  }
+
+  .ui-press:active:not(:disabled) {
+    transform: none;
+  }
+}
