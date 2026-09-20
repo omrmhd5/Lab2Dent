@@ -27,15 +27,14 @@ export async function createCase(
 ): Promise<CreateCaseState> {
   const name = String(formData.get("name") ?? "").trim();
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
-  const studentNumber = String(formData.get("studentNumber") ?? "").trim();
-  const universityId = String(formData.get("universityId") ?? "").trim();
+  const university = String(formData.get("university") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "").trim();
   const shade = String(formData.get("shade") ?? "").trim() || null;
   const toothNotes = String(formData.get("toothNotes") ?? "").trim() || null;
   const extraNotes = String(formData.get("extraNotes") ?? "").trim() || null;
   const screenshot = formData.get("screenshot");
 
-  if (!name || !phone || !studentNumber || !universityId || !categoryId) {
+  if (!name || !phone || !university || !categoryId) {
     return { error: "Fill in every required field." };
   }
 
@@ -82,15 +81,14 @@ export async function createCase(
           .update(customers)
           .set({
             name,
-            studentNumber,
-            universityId,
+            university,
             updatedAt: new Date(),
           })
           .where(eq(customers.id, existing.id));
       } else {
         const [created] = await tx
           .insert(customers)
-          .values({ name, phone, studentNumber, universityId })
+          .values({ name, phone, university })
           .returning({ id: customers.id });
         customerId = created.id;
       }
@@ -201,6 +199,7 @@ export async function listOrders(filters: {
         ilike(orders.code, q),
         ilike(customers.name, q),
         ilike(customers.phone, q),
+        ilike(customers.university, q),
       ),
     );
   }
@@ -230,7 +229,7 @@ export async function getOrderDetail(orderId: string) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, orderId),
     with: {
-      customer: { with: { university: true } },
+      customer: true,
       events: {
         with: {
           staff: {

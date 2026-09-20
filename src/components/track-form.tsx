@@ -11,7 +11,7 @@ export function TrackForm({ messages }: { messages: Messages }) {
 
   return (
     <form
-      className="mt-10 space-y-4"
+      className="space-y-5"
       onSubmit={(event) => {
         event.preventDefault();
         const trimmed = code.trim().toUpperCase();
@@ -19,7 +19,7 @@ export function TrackForm({ messages }: { messages: Messages }) {
       }}
     >
       <label className="block space-y-2">
-        <span className="text-sm font-medium">{messages.codeLabel}</span>
+        <span className="text-sm font-bold">{messages.codeLabel}</span>
         <input
           className="ui-input font-mono uppercase"
           value={code}
@@ -28,11 +28,8 @@ export function TrackForm({ messages }: { messages: Messages }) {
           required
         />
       </label>
-      <button
-        type="submit"
-        className="ui-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white"
-      >
-        <MagnifyingGlass size={16} weight="bold" />
+      <button type="submit" className="ui-press ui-btn ui-btn-primary w-full">
+        <MagnifyingGlass size={16} weight="bold" aria-hidden="true" />
         {messages.lookUp}
       </button>
     </form>

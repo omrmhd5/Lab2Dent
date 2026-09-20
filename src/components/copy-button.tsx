@@ -9,7 +9,7 @@ export function CopyButton({ value, idle, done }: { value: string; idle: string;
   return (
     <button
       type="button"
-      className="ui-press inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium"
+      className="ui-press ui-btn ui-btn-secondary"
       onClick={async () => {
         await navigator.clipboard.writeText(value);
         setCopied(true);

@@ -11,7 +11,7 @@ export default async function AdminLayout({
   return (
     <div className="min-h-[100dvh] bg-background">
       <AdminNav isAdmin={session.role === "admin"} />
-      <div className="mx-auto max-w-[1400px] px-4 py-8">{children}</div>
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6">{children}</div>
     </div>
   );
 }

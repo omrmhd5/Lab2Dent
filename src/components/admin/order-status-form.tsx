@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import type { OrderStatus } from "@/db/schema";
 import { ORDER_STATUSES, STATUS_LABELS } from "@/lib/status";
 import { updateOrderStatus } from "@/server/actions/orders";
+import { SelectMenu } from "@/components/select-menu";
 
 export function OrderStatusForm({
   orderId,
@@ -28,18 +29,21 @@ export function OrderStatusForm({
     >
       <label className="space-y-2">
         <span className="block text-sm font-medium">Status</span>
-        <select className="ui-input min-w-56" name="status" defaultValue={status}>
-          {ORDER_STATUSES.map((value) => (
-            <option key={value} value={value}>
-              {STATUS_LABELS[value].en}
-            </option>
-          ))}
-        </select>
+        <SelectMenu
+          name="status"
+          defaultValue={status}
+          className="min-w-56"
+          ariaLabel="Status"
+          options={ORDER_STATUSES.map((value) => ({
+            value,
+            label: STATUS_LABELS[value].en,
+          }))}
+        />
       </label>
       <button
         type="submit"
         disabled={pending}
-        className="ui-press rounded-full bg-accent px-4 py-2 text-sm font-medium text-white"
+        className="ui-press ui-btn ui-btn-primary"
       >
         Save status
       </button>

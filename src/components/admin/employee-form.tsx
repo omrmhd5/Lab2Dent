@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createEmployee, updateEmployee } from "@/server/actions/employees";
+import { SelectMenu } from "@/components/select-menu";
 
 type Employee = {
   id: string;
@@ -51,10 +52,14 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
       </label>
       <label className="space-y-1">
         <span className="block text-xs text-muted">Role</span>
-        <select className="ui-input" name="role" defaultValue={employee?.role ?? "employee"}>
-          <option value="employee">Employee</option>
-          <option value="admin">Admin</option>
-        </select>
+        <SelectMenu
+          name="role"
+          defaultValue={employee?.role ?? "employee"}
+          options={[
+            { value: "employee", label: "Employee" },
+            { value: "admin", label: "Admin" },
+          ]}
+        />
       </label>
       {employee ? (
         <label className="flex items-center gap-2 pb-3 text-sm">
@@ -65,7 +70,7 @@ export function EmployeeForm({ employee }: { employee?: Employee }) {
       <button
         type="submit"
         disabled={pending}
-        className="ui-press rounded-full bg-accent px-4 py-2 text-sm font-medium text-white"
+        className="ui-press ui-btn ui-btn-primary"
       >
         {employee ? "Save" : "Add employee"}
       </button>

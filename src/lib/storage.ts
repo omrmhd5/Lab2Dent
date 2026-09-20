@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { get, put } from "@vercel/blob";
 
-const MAX_BYTES = 6 * 1024 * 1024;
+const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export function assertPaymentImage(file: File) {
@@ -12,7 +12,7 @@ export function assertPaymentImage(file: File) {
   }
 
   if (file.size > MAX_BYTES) {
-    throw new Error("Screenshot must be 6 MB or smaller.");
+    throw new Error("Screenshot must be 5 MB or smaller.");
   }
 }
 
@@ -27,11 +27,12 @@ export async function savePaymentScreenshot(file: File) {
 
   const filename = `payments/${Date.now()}-${randomBytes(6).toString("hex")}.${extensionFor(file.type)}`;
   const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const useBlob = Boolean(token || process.env.BLOB_STORE_ID);
 
-  if (token) {
+  if (useBlob) {
     const blob = await put(filename, file, {
       access: "private",
-      token,
+      ...(token ? { token } : {}),
       addRandomSuffix: false,
     });
 
@@ -48,7 +49,9 @@ export async function readPaymentScreenshot(key: string) {
   if (key.startsWith("blob:")) {
     const pathname = key.slice("blob:".length);
     const result = await get(pathname, {
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      ...(process.env.BLOB_READ_WRITE_TOKEN
+        ? { token: process.env.BLOB_READ_WRITE_TOKEN }
+        : {}),
       access: "private",
     });
 
@@ -56,7 +59,7 @@ export async function readPaymentScreenshot(key: string) {
       return null;
     }
 
-    const bytes = Buffer.from(await result.stream.arrayBuffer());
+    const bytes = Buffer.from(await new Response(result.stream).arrayBuffer());
     return {
       bytes,
       contentType: result.blob.contentType ?? "image/jpeg",
@@ -69,7 +72,11 @@ export async function readPaymentScreenshot(key: string) {
     const bytes = await readFile(diskPath);
     const ext = path.extname(relative);
     const contentType =
-      ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
+      ext === ".png"
+        ? "image/png"
+        : ext === ".webp"
+          ? "image/webp"
+          : "image/jpeg";
     return { bytes, contentType };
   }
 

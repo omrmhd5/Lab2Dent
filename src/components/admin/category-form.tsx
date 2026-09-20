@@ -8,10 +8,15 @@ type Category = {
   name: string;
   priceEgp: number;
   isActive: boolean;
-  sortOrder: number;
 };
 
-export function CategoryForm({ category }: { category?: Category }) {
+export function CategoryForm({
+  category,
+  layout = "default",
+}: {
+  category?: Category;
+  layout?: "default" | "row";
+}) {
   const action = category ? updateCategory : createCategory;
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
@@ -21,7 +26,9 @@ export function CategoryForm({ category }: { category?: Category }) {
   );
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3">
+    <form
+      action={formAction}
+      className={`flex flex-wrap gap-3 ${layout === "row" ? "items-center" : "items-end"}`}>
       {category ? <input type="hidden" name="id" value={category.id} /> : null}
       <label className="space-y-1">
         <span className="block text-xs text-muted">Name</span>
@@ -44,26 +51,21 @@ export function CategoryForm({ category }: { category?: Category }) {
           required
         />
       </label>
-      <label className="space-y-1">
-        <span className="block text-xs text-muted">Sort</span>
-        <input
-          className="ui-input w-20"
-          name="sortOrder"
-          type="number"
-          defaultValue={category?.sortOrder ?? 0}
-        />
-      </label>
       {category ? (
-        <label className="flex items-center gap-2 pb-3 text-sm">
-          <input type="checkbox" name="isActive" defaultChecked={category.isActive} />
+        <label
+          className={`flex items-center gap-2 text-sm ${layout === "row" ? "" : "pb-3"}`}>
+          <input
+            type="checkbox"
+            name="isActive"
+            defaultChecked={category.isActive}
+          />
           Active
         </label>
       ) : null}
       <button
         type="submit"
         disabled={pending}
-        className="ui-press rounded-full bg-accent px-4 py-2 text-sm font-medium text-white"
-      >
+        className="ui-press ui-btn ui-btn-primary">
         {category ? "Save" : "Add category"}
       </button>
       {state && "error" in state && state.error ? (

@@ -6,6 +6,7 @@ import type { OrderStatus } from "@/db/schema";
 import { ORDER_STATUSES, STATUS_LABELS } from "@/lib/status";
 import { formatEgp } from "@/lib/utils";
 import { bulkUpdateStatus } from "@/server/actions/orders";
+import { SelectMenu } from "@/components/select-menu";
 
 export type OrderRow = {
   id: string;
@@ -76,7 +77,19 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                 </td>
                 <td className="px-3 py-3">{order.categoryName}</td>
                 <td className="px-3 py-3 font-mono">{formatEgp(order.priceEgp)}</td>
-                <td className="px-3 py-3">{STATUS_LABELS[order.status].en}</td>
+                <td className="px-3 py-3">
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+                      order.status === "rejected"
+                        ? "bg-danger/10 text-danger"
+                        : order.status === "delivered" || order.status === "ready"
+                          ? "bg-accent-soft text-accent"
+                          : "bg-brand-soft text-brand"
+                    }`}
+                  >
+                    {STATUS_LABELS[order.status].en}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -89,21 +102,21 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
       {selected.length > 0 ? (
         <div className="sticky bottom-4 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-[var(--shadow-md)]">
           <p className="text-sm">{selected.length} selected</p>
-          <select
-            className="ui-input max-w-56"
+          <SelectMenu
+            className="w-72 shrink-0"
+            menuPlacement="up"
+            ariaLabel="Bulk status"
             value={status}
-            onChange={(event) => setStatus(event.target.value as OrderStatus)}
-          >
-            {ORDER_STATUSES.map((value) => (
-              <option key={value} value={value}>
-                {STATUS_LABELS[value].en}
-              </option>
-            ))}
-          </select>
+            onChange={(next) => setStatus(next as OrderStatus)}
+            options={ORDER_STATUSES.map((value) => ({
+              value,
+              label: STATUS_LABELS[value].en,
+            }))}
+          />
           <button
             type="button"
             disabled={pending}
-            className="ui-press rounded-full bg-accent px-4 py-2 text-sm font-medium text-white"
+            className="ui-press ui-btn ui-btn-primary"
             onClick={() => {
               start(async () => {
                 const result = await bulkUpdateStatus(selected, status);

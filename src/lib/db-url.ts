@@ -2,8 +2,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 function loadEnvFile() {
+  if (process.env.DATABASE_URL) {
+    return;
+  }
+
   for (const fileName of [".env.local", ".env"]) {
-    const envPath = resolve(process.cwd(), fileName);
+    const envPath = resolve(/* turbopackIgnore: true */ process.cwd(), fileName);
 
     if (!existsSync(envPath)) {
       continue;

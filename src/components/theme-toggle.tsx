@@ -23,7 +23,7 @@ export function ThemeToggle({
         document.documentElement.style.colorScheme = next;
         start(() => setTheme(next));
       }}
-      className="ui-press inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-foreground"
+      className="ui-press inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-foreground"
     >
       <Sun size={18} className="hidden dark:block" />
       <Moon size={18} className="block dark:hidden" />

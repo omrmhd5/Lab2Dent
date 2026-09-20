@@ -10,15 +10,24 @@ import { requireAdminSession, requireStaffSession } from "@/lib/auth";
 export async function listCustomers() {
   await requireStaffSession();
 
-  return db.query.customers.findMany({
-    with: {
+  const rows = await db.query.customers.findMany({
+    columns: {
+      id: true,
+      name: true,
+      phone: true,
       university: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    with: {
       orders: {
         columns: { id: true, createdAt: true },
       },
     },
     orderBy: (row, { desc }) => [desc(row.updatedAt)],
   });
+
+  return rows;
 }
 
 export async function listEmployees() {
@@ -40,15 +49,27 @@ export async function createEmployee(formData: FormData) {
   await requireAdminSession();
 
   const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const role = String(formData.get("role") ?? "employee") === "admin" ? "admin" : "employee";
+  const role =
+    String(formData.get("role") ?? "employee") === "admin"
+      ? "admin"
+      : "employee";
 
   if (!name || !email || password.length < 8) {
-    return { error: "Name, email, and a password of at least 8 characters are required." };
+    return {
+      error:
+        "Name, email, and a password of at least 8 characters are required.",
+    };
   }
 
-  const [existing] = await db.select({ id: staff.id }).from(staff).where(eq(staff.email, email)).limit(1);
+  const [existing] = await db
+    .select({ id: staff.id })
+    .from(staff)
+    .where(eq(staff.email, email))
+    .limit(1);
 
   if (existing) {
     return { error: "That email is already in use." };
@@ -71,9 +92,14 @@ export async function updateEmployee(formData: FormData) {
 
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const role = String(formData.get("role") ?? "employee") === "admin" ? "admin" : "employee";
+  const role =
+    String(formData.get("role") ?? "employee") === "admin"
+      ? "admin"
+      : "employee";
   const isActive = String(formData.get("isActive") ?? "") === "on";
 
   if (!id || !name || !email) {

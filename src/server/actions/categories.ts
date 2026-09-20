@@ -1,6 +1,6 @@
 "use server";
 
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { categories, orders } from "@/db/schema";
@@ -21,16 +21,21 @@ export async function createCategory(formData: FormData) {
 
   const name = String(formData.get("name") ?? "").trim();
   const priceEgp = Number(formData.get("priceEgp"));
-  const sortOrder = Number(formData.get("sortOrder") || 0);
 
   if (!name || !Number.isFinite(priceEgp) || priceEgp < 0) {
     return { error: "Name and a valid price are required." };
   }
 
+  const [last] = await db
+    .select({ sortOrder: categories.sortOrder })
+    .from(categories)
+    .orderBy(desc(categories.sortOrder))
+    .limit(1);
+
   await db.insert(categories).values({
     name,
     priceEgp: Math.round(priceEgp),
-    sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
+    sortOrder: (last?.sortOrder ?? -1) + 1,
     isActive: true,
   });
 
@@ -45,7 +50,6 @@ export async function updateCategory(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const priceEgp = Number(formData.get("priceEgp"));
-  const sortOrder = Number(formData.get("sortOrder") || 0);
   const isActive = String(formData.get("isActive") ?? "") === "on";
 
   if (!id || !name || !Number.isFinite(priceEgp) || priceEgp < 0) {
@@ -57,11 +61,30 @@ export async function updateCategory(formData: FormData) {
     .set({
       name,
       priceEgp: Math.round(priceEgp),
-      sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
       isActive,
       updatedAt: new Date(),
     })
     .where(eq(categories.id, id));
+
+  revalidatePath("/admin/categories");
+  revalidatePath("/new-case");
+  return { ok: true as const };
+}
+
+export async function reorderCategories(ids: string[]) {
+  await requireStaffSession();
+
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return { error: "Nothing to reorder." };
+
+  await Promise.all(
+    unique.map((id, index) =>
+      db
+        .update(categories)
+        .set({ sortOrder: index, updatedAt: new Date() })
+        .where(eq(categories.id, id)),
+    ),
+  );
 
   revalidatePath("/admin/categories");
   revalidatePath("/new-case");

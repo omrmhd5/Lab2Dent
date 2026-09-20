@@ -1,4 +1,5 @@
 import { OrdersTable } from "@/components/admin/orders-table";
+import { SelectMenu } from "@/components/select-menu";
 import type { OrderStatus } from "@/db/schema";
 import { ORDER_STATUSES, STATUS_LABELS } from "@/lib/status";
 import { listOrders } from "@/server/actions/orders";
@@ -21,25 +22,30 @@ export default async function AdminOrdersPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-      <form className="mt-6 flex flex-wrap gap-3">
+      <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+      <form className="ui-card mt-6 flex flex-wrap gap-3">
         <input
           className="ui-input max-w-xs"
           name="q"
           defaultValue={q ?? ""}
           placeholder="Search name, phone, or code"
         />
-        <select className="ui-input max-w-52" name="status" defaultValue={selectedStatus}>
-          <option value="all">All statuses</option>
-          {ORDER_STATUSES.map((value) => (
-            <option key={value} value={value}>
-              {STATUS_LABELS[value].en}
-            </option>
-          ))}
-        </select>
+        <SelectMenu
+          name="status"
+          className="w-72 shrink-0"
+          defaultValue={selectedStatus}
+          ariaLabel="Filter by status"
+          options={[
+            { value: "all", label: "All statuses" },
+            ...ORDER_STATUSES.map((value) => ({
+              value,
+              label: STATUS_LABELS[value].en,
+            })),
+          ]}
+        />
         <button
           type="submit"
-          className="ui-press rounded-full bg-accent px-4 py-2 text-sm font-medium text-white"
+          className="ui-press ui-btn ui-btn-primary"
         >
           Filter
         </button>

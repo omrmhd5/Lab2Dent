@@ -5,22 +5,13 @@ import {
   orderEvents,
   orders,
   staff,
-  universities,
 } from "./schema";
-
-export const universitiesRelations = relations(universities, ({ many }) => ({
-  customers: many(customers),
-}));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   orders: many(orders),
 }));
 
-export const customersRelations = relations(customers, ({ one, many }) => ({
-  university: one(universities, {
-    fields: [customers.universityId],
-    references: [universities.id],
-  }),
+export const customersRelations = relations(customers, ({ many }) => ({
   orders: many(orders),
 }));
 

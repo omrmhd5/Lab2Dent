@@ -5,15 +5,14 @@ export default async function CustomersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-border bg-surface">
+      <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
+      <div className="ui-card mt-6 overflow-x-auto p-0">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="border-b border-border text-muted">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Phone</th>
               <th className="px-4 py-3 font-medium">University</th>
-              <th className="px-4 py-3 font-medium">ID</th>
               <th className="px-4 py-3 font-medium">Orders</th>
             </tr>
           </thead>
@@ -26,8 +25,7 @@ export default async function CustomersPage() {
                 <tr key={row.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">{row.name}</td>
                   <td className="px-4 py-3 font-mono">{row.phone}</td>
-                  <td className="px-4 py-3">{row.university.name}</td>
-                  <td className="px-4 py-3">{row.studentNumber}</td>
+                  <td className="px-4 py-3">{row.university}</td>
                   <td className="px-4 py-3">
                     {row.orders.length}
                     {last

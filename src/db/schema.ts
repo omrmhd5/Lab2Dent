@@ -34,12 +34,6 @@ export const staff = pgTable("staff", {
     .notNull(),
 }, (table) => [uniqueIndex("staff_email_idx").on(table.email)]);
 
-export const universities = pgTable("universities", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  sortOrder: integer("sort_order").notNull().default(0),
-}, (table) => [uniqueIndex("universities_name_idx").on(table.name)]);
-
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -60,10 +54,7 @@ export const customers = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     phone: text("phone").notNull(),
-    studentNumber: text("student_number").notNull(),
-    universityId: uuid("university_id")
-      .notNull()
-      .references(() => universities.id),
+    university: text("university").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -71,10 +62,7 @@ export const customers = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [
-    uniqueIndex("customers_phone_idx").on(table.phone),
-    index("customers_university_id_idx").on(table.universityId),
-  ],
+  (table) => [uniqueIndex("customers_phone_idx").on(table.phone)],
 );
 
 export const orders = pgTable(

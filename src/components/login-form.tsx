@@ -16,14 +16,14 @@ export function LoginForm({
   const [state, action, pending] = useActionState(loginStaff, initial);
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-5">
       <input type="hidden" name="from" value={from} />
       <label className="block space-y-2">
-        <span className="text-sm font-medium">{messages.email}</span>
+        <span className="text-sm font-bold">{messages.email}</span>
         <input className="ui-input" name="email" type="email" autoComplete="username" required />
       </label>
       <label className="block space-y-2">
-        <span className="text-sm font-medium">{messages.password}</span>
+        <span className="text-sm font-bold">{messages.password}</span>
         <input
           className="ui-input"
           name="password"
@@ -33,15 +33,11 @@ export function LoginForm({
         />
       </label>
       {state.error ? (
-        <p className="text-sm text-danger" role="alert">
+        <p className="text-sm font-bold text-danger" role="alert">
           {messages.loginError}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={pending}
-        className="ui-press w-full rounded-full bg-accent py-2.5 text-sm font-medium text-white"
-      >
+      <button type="submit" disabled={pending} className="ui-press ui-btn ui-btn-primary w-full">
         {messages.signIn}
       </button>
     </form>

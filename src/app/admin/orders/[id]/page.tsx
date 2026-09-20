@@ -34,8 +34,7 @@ export default async function OrderDetailPage({
           <dl className="mt-4 space-y-2 text-sm">
             <div>{order.customer.name}</div>
             <div>{order.customer.phone}</div>
-            <div>{order.customer.studentNumber}</div>
-            <div>{order.customer.university.name}</div>
+            <div>{order.customer.university}</div>
           </dl>
         </div>
         <div className="rounded-2xl border border-border bg-surface p-5">

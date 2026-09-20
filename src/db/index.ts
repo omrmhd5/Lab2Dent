@@ -7,28 +7,40 @@ import * as schema from "./schema";
 const fullSchema = { ...schema, ...relations };
 
 type Db = PostgresJsDatabase<typeof fullSchema>;
+type Sql = ReturnType<typeof postgres>;
 
 declare global {
   var __lab2dentDb: Db | undefined;
+  var __lab2dentSql: Sql | undefined;
+  var __lab2dentDbTag: object | undefined;
 }
 
 function createDb() {
-  const connectionString = getDatabaseUrl();
-  const client = postgres(connectionString, {
+  const client = postgres(getDatabaseUrl(), {
     max: 10,
     ssl: "require",
   });
 
-  return drizzle(client, { schema: fullSchema });
+  return {
+    client,
+    db: drizzle(client, { schema: fullSchema }),
+  };
 }
 
 function getDb() {
   if (process.env.NODE_ENV !== "production") {
-    global.__lab2dentDb ??= createDb();
-    return global.__lab2dentDb;
+    if (global.__lab2dentDbTag !== fullSchema) {
+      void global.__lab2dentSql?.end({ timeout: 0 });
+      const created = createDb();
+      global.__lab2dentSql = created.client;
+      global.__lab2dentDb = created.db;
+      global.__lab2dentDbTag = fullSchema;
+    }
+
+    return global.__lab2dentDb!;
   }
 
-  return createDb();
+  return createDb().db;
 }
 
 export const db = new Proxy({} as Db, {
