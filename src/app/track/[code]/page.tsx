@@ -46,6 +46,7 @@ export default async function TrackCodePage({
           {isNew ? (
             <p className="mb-4 text-sm font-bold text-accent">{messages.doneTitle}</p>
           ) : null}
+          <p className="font-mono text-sm font-bold text-muted">#{order.orderNumber}</p>
           <h1 className="font-mono text-4xl font-bold tracking-tight md:text-5xl">{order.code}</h1>
           {isNew ? (
             <p className="mt-4 max-w-[45ch] text-lg text-muted">{messages.doneBody}</p>

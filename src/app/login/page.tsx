@@ -51,7 +51,7 @@ export default async function LoginPage({
               <div>
                 <dt className="text-muted">{messages.demoAdmin}</dt>
                 <dd className="mt-0.5 font-mono">
-                  admin@admin
+                  admin@admin.com
                   <span className="mx-2 text-muted">/</span>
                   admin123
                 </dd>
@@ -59,7 +59,7 @@ export default async function LoginPage({
               <div>
                 <dt className="text-muted">{messages.demoEmployee}</dt>
                 <dd className="mt-0.5 font-mono">
-                  employee@employee
+                  employee@employee.com
                   <span className="mx-2 text-muted">/</span>
                   employee123
                 </dd>

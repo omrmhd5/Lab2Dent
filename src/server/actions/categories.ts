@@ -1,10 +1,29 @@
 "use server";
 
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { categories, orders } from "@/db/schema";
+import { categories, categoryFields, orders } from "@/db/schema";
+import {
+  buildCategoryGroups,
+  isCategoryGroup,
+  isSelectableCategory,
+  type CategoryFieldDef,
+  type CategoryRecord,
+} from "@/lib/categories";
 import { requireStaffSession } from "@/lib/auth";
+
+function toRecord(row: typeof categories.$inferSelect): CategoryRecord {
+  return {
+    id: row.id,
+    parentId: row.parentId,
+    name: row.name,
+    priceEgp: row.priceEgp,
+    costEgp: row.costEgp,
+    isActive: row.isActive,
+    sortOrder: row.sortOrder,
+  };
+}
 
 export async function listCategories(includeInactive = false) {
   const rows = await db
@@ -12,48 +31,166 @@ export async function listCategories(includeInactive = false) {
     .from(categories)
     .orderBy(asc(categories.sortOrder), asc(categories.name));
 
-  if (includeInactive) return rows;
-  return rows.filter((row) => row.isActive);
+  const mapped = rows.map(toRecord);
+  if (includeInactive) return mapped;
+  return mapped.filter((row) => row.isActive);
 }
 
-export async function createCategory(formData: FormData) {
-  await requireStaffSession();
+export async function listPublicCategoryGroups() {
+  const rows = await listCategories(false);
+  const fields = await db
+    .select({
+      id: categoryFields.id,
+      categoryId: categoryFields.categoryId,
+      label: categoryFields.label,
+      type: categoryFields.type,
+      required: categoryFields.required,
+      sortOrder: categoryFields.sortOrder,
+    })
+    .from(categoryFields)
+    .orderBy(asc(categoryFields.sortOrder), asc(categoryFields.label));
 
-  const name = String(formData.get("name") ?? "").trim();
-  const priceEgp = Number(formData.get("priceEgp"));
-
-  if (!name || !Number.isFinite(priceEgp) || priceEgp < 0) {
-    return { error: "Name and a valid price are required." };
+  const fieldsByCategory = new Map<string, CategoryFieldDef[]>();
+  for (const field of fields) {
+    const list = fieldsByCategory.get(field.categoryId) ?? [];
+    list.push({
+      id: field.id,
+      label: field.label,
+      type: field.type,
+      required: field.required,
+    });
+    fieldsByCategory.set(field.categoryId, list);
   }
 
+  return buildCategoryGroups(rows, fieldsByCategory);
+}
+
+async function nextSortOrder(parentId: string | null) {
   const [last] = await db
     .select({ sortOrder: categories.sortOrder })
     .from(categories)
+    .where(
+      parentId
+        ? eq(categories.parentId, parentId)
+        : and(isNull(categories.parentId), isNull(categories.priceEgp)),
+    )
     .orderBy(desc(categories.sortOrder))
     .limit(1);
 
+  return (last?.sortOrder ?? -1) + 1;
+}
+
+export async function createCategoryGroup(formData: FormData) {
+  await requireStaffSession();
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return { error: "Name is required." };
+
   await db.insert(categories).values({
     name,
-    priceEgp: Math.round(priceEgp),
-    sortOrder: (last?.sortOrder ?? -1) + 1,
+    sortOrder: await nextSortOrder(null),
     isActive: true,
+    priceEgp: null,
+    parentId: null,
   });
 
-  revalidatePath("/admin/categories");
+  revalidatePath("/admin/categories", "layout");
   revalidatePath("/new-case");
+  revalidatePath("/");
   return { ok: true as const };
 }
 
-export async function updateCategory(formData: FormData) {
+export async function createSubcategory(formData: FormData) {
+  await requireStaffSession();
+
+  const parentId = String(formData.get("parentId") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const priceEgp = Number(formData.get("priceEgp"));
+  const costEgp = Number(formData.get("costEgp"));
+
+  if (
+    !parentId ||
+    !name ||
+    !Number.isFinite(priceEgp) ||
+    priceEgp < 0 ||
+    !Number.isFinite(costEgp) ||
+    costEgp < 0
+  ) {
+    return { error: "Name, price, and cost are required." };
+  }
+
+  const [parent] = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.id, parentId))
+    .limit(1);
+
+  if (!parent || !isCategoryGroup(toRecord(parent))) {
+    return { error: "Pick a valid category group." };
+  }
+
+  const isActive = String(formData.get("isActive") ?? "") === "on";
+
+  await db.insert(categories).values({
+    parentId,
+    name,
+    priceEgp: Math.round(priceEgp),
+    costEgp: Math.round(costEgp),
+    sortOrder: await nextSortOrder(parentId),
+    isActive,
+  });
+
+  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/new-case");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
+export async function updateCategoryGroup(formData: FormData) {
+  await requireStaffSession();
+
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const isActive = String(formData.get("isActive") ?? "") === "on";
+
+  if (!id || !name) return { error: "Name is required." };
+
+  await db
+    .update(categories)
+    .set({ name, isActive, updatedAt: new Date() })
+    .where(eq(categories.id, id));
+
+  if (!isActive) {
+    await db
+      .update(categories)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(categories.parentId, id));
+  }
+
+  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/new-case");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
+export async function updateSubcategory(formData: FormData) {
   await requireStaffSession();
 
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const priceEgp = Number(formData.get("priceEgp"));
+  const costEgp = Number(formData.get("costEgp"));
   const isActive = String(formData.get("isActive") ?? "") === "on";
 
-  if (!id || !name || !Number.isFinite(priceEgp) || priceEgp < 0) {
-    return { error: "Name and a valid price are required." };
+  if (
+    !id ||
+    !name ||
+    !Number.isFinite(priceEgp) ||
+    priceEgp < 0 ||
+    !Number.isFinite(costEgp) ||
+    costEgp < 0
+  ) {
+    return { error: "Name, price, and cost are required." };
   }
 
   await db
@@ -61,17 +198,19 @@ export async function updateCategory(formData: FormData) {
     .set({
       name,
       priceEgp: Math.round(priceEgp),
+      costEgp: Math.round(costEgp),
       isActive,
       updatedAt: new Date(),
     })
     .where(eq(categories.id, id));
 
-  revalidatePath("/admin/categories");
+  revalidatePath("/admin/categories", "layout");
   revalidatePath("/new-case");
+  revalidatePath("/");
   return { ok: true as const };
 }
 
-export async function reorderCategories(ids: string[]) {
+export async function reorderCategoryGroups(ids: string[]) {
   await requireStaffSession();
 
   const unique = [...new Set(ids.filter(Boolean))];
@@ -86,13 +225,95 @@ export async function reorderCategories(ids: string[]) {
     ),
   );
 
-  revalidatePath("/admin/categories");
+  revalidatePath("/admin/categories", "layout");
   revalidatePath("/new-case");
+  revalidatePath("/");
   return { ok: true as const };
 }
 
-export async function deactivateCategory(id: string) {
+export async function reorderSubcategories(parentId: string, ids: string[]) {
   await requireStaffSession();
+
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (!parentId || unique.length === 0) {
+    return { error: "Nothing to reorder." };
+  }
+
+  await Promise.all(
+    unique.map((id, index) =>
+      db
+        .update(categories)
+        .set({ sortOrder: index, updatedAt: new Date() })
+        .where(and(eq(categories.id, id), eq(categories.parentId, parentId))),
+    ),
+  );
+
+  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/new-case");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
+function revalidateCatalog() {
+  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/new-case");
+  revalidatePath("/");
+}
+
+export async function deleteCategory(id: string) {
+  await requireStaffSession();
+
+  const [row] = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.id, id))
+    .limit(1);
+
+  if (!row) return { error: "That item was not found." };
+
+  const record = toRecord(row);
+
+  if (isCategoryGroup(record)) {
+    const children = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.parentId, id));
+
+    const childIds = children.map((child) => child.id);
+    const usedChild =
+      childIds.length > 0
+        ? await db
+            .select({ id: orders.id })
+            .from(orders)
+            .where(inArray(orders.categoryId, childIds))
+            .limit(1)
+        : [];
+
+    if (usedChild.length > 0) {
+      await db
+        .update(categories)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(categories.id, id));
+      await db
+        .update(categories)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(categories.parentId, id));
+      revalidateCatalog();
+      return {
+        ok: true as const,
+        mode: "hidden" as const,
+        message: "Hidden from students because existing orders use it.",
+      };
+    }
+
+    await db.delete(categories).where(eq(categories.id, id));
+    revalidateCatalog();
+    return { ok: true as const, mode: "deleted" as const };
+  }
+
+  if (!isSelectableCategory(record)) {
+    return { error: "That item cannot be deleted." };
+  }
 
   const [used] = await db
     .select({ id: orders.id })
@@ -105,10 +326,15 @@ export async function deactivateCategory(id: string) {
       .update(categories)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(categories.id, id));
-  } else {
-    await db.delete(categories).where(eq(categories.id, id));
+    revalidateCatalog();
+    return {
+      ok: true as const,
+      mode: "hidden" as const,
+      message: "Hidden from students because an order already uses it.",
+    };
   }
 
-  revalidatePath("/admin/categories");
-  revalidatePath("/new-case");
+  await db.delete(categories).where(eq(categories.id, id));
+  revalidateCatalog();
+  return { ok: true as const, mode: "deleted" as const };
 }

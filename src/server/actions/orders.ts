@@ -1,18 +1,25 @@
 "use server";
 
-import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
   categories,
-  customers,
+  categoryFields,
   orderEvents,
+  orderFieldValues,
   orders,
+  universities,
   type OrderStatus,
 } from "@/db/schema";
 import { requireStaffSession } from "@/lib/auth";
 import { generateOrderCode } from "@/lib/order-code";
-import { savePaymentScreenshot } from "@/lib/storage";
+import { saveCaseImage, savePaymentScreenshot } from "@/lib/storage";
+import {
+  formatCategoryLabel,
+  isSelectableCategory,
+  type CategoryRecord,
+} from "@/lib/categories";
 import { ORDER_STATUSES } from "@/lib/status";
 import { isEgyptianMobile, normalizePhone } from "@/lib/utils";
 
@@ -27,14 +34,11 @@ export async function createCase(
 ): Promise<CreateCaseState> {
   const name = String(formData.get("name") ?? "").trim();
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
-  const university = String(formData.get("university") ?? "").trim();
+  const universityId = String(formData.get("universityId") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "").trim();
-  const shade = String(formData.get("shade") ?? "").trim() || null;
-  const toothNotes = String(formData.get("toothNotes") ?? "").trim() || null;
-  const extraNotes = String(formData.get("extraNotes") ?? "").trim() || null;
   const screenshot = formData.get("screenshot");
 
-  if (!name || !phone || !university || !categoryId) {
+  if (!name || !phone || !universityId || !categoryId) {
     return { error: "Fill in every required field." };
   }
 
@@ -52,8 +56,92 @@ export async function createCase(
     .where(and(eq(categories.id, categoryId), eq(categories.isActive, true)))
     .limit(1);
 
-  if (!category) {
+  if (!category || !isSelectableCategory(category as CategoryRecord)) {
     return { error: "That service is no longer available." };
+  }
+
+  let parent: CategoryRecord | null = null;
+  if (category.parentId) {
+    const [parentRow] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, category.parentId))
+      .limit(1);
+    parent = parentRow ? (parentRow as CategoryRecord) : null;
+  }
+
+  const categoryName = formatCategoryLabel(category as CategoryRecord, parent);
+
+  const [university] = await db
+    .select()
+    .from(universities)
+    .where(
+      and(eq(universities.id, universityId), eq(universities.isActive, true)),
+    )
+    .limit(1);
+
+  if (!university) {
+    return { error: "That university is no longer available." };
+  }
+
+  const fields = await db
+    .select()
+    .from(categoryFields)
+    .where(eq(categoryFields.categoryId, category.id))
+    .orderBy(asc(categoryFields.sortOrder));
+
+  const answers: {
+    fieldId: string;
+    label: string;
+    type: "text" | "image";
+    textValue: string | null;
+    imageKey: string | null;
+    sortOrder: number;
+  }[] = [];
+
+  for (const field of fields) {
+    if (field.type === "text") {
+      const textValue = String(formData.get(`field_${field.id}`) ?? "").trim();
+      if (field.required && !textValue) {
+        return { error: `Fill in ${field.label}.` };
+      }
+      if (!textValue) continue;
+      answers.push({
+        fieldId: field.id,
+        label: field.label,
+        type: "text",
+        textValue,
+        imageKey: null,
+        sortOrder: field.sortOrder,
+      });
+      continue;
+    }
+
+    const file = formData.get(`field_${field.id}`);
+    const hasFile = file instanceof File && file.size > 0;
+    if (field.required && !hasFile) {
+      return { error: `Upload ${field.label}.` };
+    }
+    if (!hasFile || !(file instanceof File)) continue;
+
+    try {
+      const imageKey = await saveCaseImage(file);
+      answers.push({
+        fieldId: field.id,
+        label: field.label,
+        type: "image",
+        textValue: null,
+        imageKey,
+        sortOrder: field.sortOrder,
+      });
+    } catch (error) {
+      return {
+        error:
+          error instanceof Error
+            ? error.message
+            : `Could not save ${field.label}.`,
+      };
+    }
   }
 
   let paymentScreenshotKey: string;
@@ -62,41 +150,15 @@ export async function createCase(
     paymentScreenshotKey = await savePaymentScreenshot(screenshot);
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Could not save the screenshot.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not save the screenshot.",
     };
   }
 
   try {
     const code = await db.transaction(async (tx) => {
-      const [existing] = await tx
-        .select()
-        .from(customers)
-        .where(eq(customers.phone, phone))
-        .limit(1);
-
-      let customerId = existing?.id;
-
-      if (existing) {
-        await tx
-          .update(customers)
-          .set({
-            name,
-            university,
-            updatedAt: new Date(),
-          })
-          .where(eq(customers.id, existing.id));
-      } else {
-        const [created] = await tx
-          .insert(customers)
-          .values({ name, phone, university })
-          .returning({ id: customers.id });
-        customerId = created.id;
-      }
-
-      if (!customerId) {
-        throw new Error("Could not save customer.");
-      }
-
       let orderCode = generateOrderCode();
 
       for (let attempt = 0; attempt < 6; attempt += 1) {
@@ -114,17 +176,30 @@ export async function createCase(
         .insert(orders)
         .values({
           code: orderCode,
-          customerId,
+          studentName: name,
+          studentPhone: phone,
+          studentUniversity: university.name,
           categoryId: category.id,
-          categoryName: category.name,
-          priceEgp: category.priceEgp,
-          shade,
-          toothNotes,
-          extraNotes,
+          categoryName,
+          priceEgp: category.priceEgp!,
           status: "pending",
           paymentScreenshotKey,
         })
         .returning({ code: orders.code, id: orders.id });
+
+      if (answers.length > 0) {
+        await tx.insert(orderFieldValues).values(
+          answers.map((answer) => ({
+            orderId: order.id,
+            fieldId: answer.fieldId,
+            label: answer.label,
+            type: answer.type,
+            textValue: answer.textValue,
+            imageKey: answer.imageKey,
+            sortOrder: answer.sortOrder,
+          })),
+        );
+      }
 
       await tx.insert(orderEvents).values({
         orderId: order.id,
@@ -141,7 +216,10 @@ export async function createCase(
   }
 }
 
-export async function bulkUpdateStatus(orderIds: string[], status: OrderStatus) {
+export async function bulkUpdateStatus(
+  orderIds: string[],
+  status: OrderStatus,
+) {
   const session = await requireStaffSession();
 
   if (orderIds.length === 0) {
@@ -172,7 +250,6 @@ export async function bulkUpdateStatus(orderIds: string[], status: OrderStatus) 
   });
 
   revalidatePath("/admin");
-  revalidatePath("/admin/customers");
   return { ok: true as const };
 }
 
@@ -193,30 +270,36 @@ export async function listOrders(filters: {
   }
 
   if (filters.q?.trim()) {
-    const q = `%${filters.q.trim()}%`;
-    conditions.push(
-      or(
-        ilike(orders.code, q),
-        ilike(customers.name, q),
-        ilike(customers.phone, q),
-        ilike(customers.university, q),
-      ),
-    );
+    const trimmed = filters.q.trim();
+    const q = `%${trimmed}%`;
+    const searchConditions = [
+      ilike(orders.code, q),
+      ilike(orders.studentName, q),
+      ilike(orders.studentPhone, q),
+      ilike(orders.studentUniversity, q),
+    ];
+    const asNumber = Number(trimmed.replace(/^#/, ""));
+    if (Number.isInteger(asNumber) && asNumber > 0) {
+      searchConditions.push(eq(orders.orderNumber, asNumber));
+    }
+    conditions.push(or(...searchConditions));
   }
 
   const rows = await db
     .select({
       id: orders.id,
+      orderNumber: orders.orderNumber,
       code: orders.code,
       categoryName: orders.categoryName,
       priceEgp: orders.priceEgp,
+      costEgp: categories.costEgp,
       status: orders.status,
       createdAt: orders.createdAt,
-      customerName: customers.name,
-      customerPhone: customers.phone,
+      studentName: orders.studentName,
+      studentPhone: orders.studentPhone,
     })
     .from(orders)
-    .innerJoin(customers, eq(orders.customerId, customers.id))
+    .leftJoin(categories, eq(orders.categoryId, categories.id))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(orders.createdAt));
 
@@ -229,7 +312,6 @@ export async function getOrderDetail(orderId: string) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, orderId),
     with: {
-      customer: true,
       events: {
         with: {
           staff: {
@@ -237,6 +319,7 @@ export async function getOrderDetail(orderId: string) {
           },
         },
       },
+      fieldValues: true,
     },
   });
 
@@ -250,11 +333,6 @@ export async function findPublicOrder(code: string) {
 
   const order = await db.query.orders.findFirst({
     where: eq(orders.code, normalized),
-    with: {
-      customer: {
-        columns: { name: true },
-      },
-    },
   });
 
   return order ?? null;

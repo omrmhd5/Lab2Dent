@@ -28,7 +28,7 @@ export default async function AdminOrdersPage({
           className="ui-input max-w-xs"
           name="q"
           defaultValue={q ?? ""}
-          placeholder="Search name, phone, or code"
+          placeholder="Search name, phone, code, or #"
         />
         <SelectMenu
           name="status"

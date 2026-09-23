@@ -25,16 +25,18 @@ export default async function OrderDetailPage({
         <Link href="/admin" className="text-sm text-muted">
           Back to orders
         </Link>
-        <h1 className="mt-2 font-mono text-2xl tracking-tight">{order.code}</h1>
+        <h1 className="mt-2 font-mono text-2xl tracking-tight">
+          <span className="text-muted">#{order.orderNumber}</span> {order.code}
+        </h1>
       </div>
 
       <section className="grid gap-6 md:grid-cols-2">
         <div className="rounded-2xl border border-border bg-surface p-5">
           <h2 className="font-medium">Student</h2>
           <dl className="mt-4 space-y-2 text-sm">
-            <div>{order.customer.name}</div>
-            <div>{order.customer.phone}</div>
-            <div>{order.customer.university}</div>
+            <div>{order.studentName}</div>
+            <div>{order.studentPhone}</div>
+            <div>{order.studentUniversity}</div>
           </dl>
         </div>
         <div className="rounded-2xl border border-border bg-surface p-5">
@@ -45,6 +47,26 @@ export default async function OrderDetailPage({
             {order.shade ? <div>Shade: {order.shade}</div> : null}
             {order.toothNotes ? <div>{order.toothNotes}</div> : null}
             {order.extraNotes ? <div>{order.extraNotes}</div> : null}
+            {[...order.fieldValues]
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((value) =>
+                value.type === "image" && value.imageKey ? (
+                  <div key={value.id} className="space-y-2">
+                    <div className="font-medium">{value.label}</div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/orders/${order.id}/fields/${value.id}`}
+                      alt={value.label}
+                      className="max-h-64 rounded-xl border border-border"
+                    />
+                  </div>
+                ) : (
+                  <div key={value.id}>
+                    <span className="text-muted">{value.label}: </span>
+                    {value.textValue}
+                  </div>
+                ),
+              )}
           </dl>
         </div>
       </section>

@@ -1,25 +1,33 @@
 import { relations } from "drizzle-orm";
 import {
   categories,
-  customers,
+  categoryFields,
   orderEvents,
+  orderFieldValues,
   orders,
   staff,
 } from "./schema";
 
-export const categoriesRelations = relations(categories, ({ many }) => ({
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+  parent: one(categories, {
+    fields: [categories.parentId],
+    references: [categories.id],
+    relationName: "category_children",
+  }),
+  children: many(categories, { relationName: "category_children" }),
   orders: many(orders),
+  fields: many(categoryFields),
 }));
 
-export const customersRelations = relations(customers, ({ many }) => ({
-  orders: many(orders),
+export const categoryFieldsRelations = relations(categoryFields, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [categoryFields.categoryId],
+    references: [categories.id],
+  }),
+  values: many(orderFieldValues),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
-  customer: one(customers, {
-    fields: [orders.customerId],
-    references: [customers.id],
-  }),
   category: one(categories, {
     fields: [orders.categoryId],
     references: [categories.id],
@@ -29,6 +37,18 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     references: [staff.id],
   }),
   events: many(orderEvents),
+  fieldValues: many(orderFieldValues),
+}));
+
+export const orderFieldValuesRelations = relations(orderFieldValues, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderFieldValues.orderId],
+    references: [orders.id],
+  }),
+  field: one(categoryFields, {
+    fields: [orderFieldValues.fieldId],
+    references: [categoryFields.id],
+  }),
 }));
 
 export const orderEventsRelations = relations(orderEvents, ({ one }) => ({

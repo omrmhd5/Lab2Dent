@@ -5,30 +5,7 @@ import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { staff } from "@/db/schema";
-import { requireAdminSession, requireStaffSession } from "@/lib/auth";
-
-export async function listCustomers() {
-  await requireStaffSession();
-
-  const rows = await db.query.customers.findMany({
-    columns: {
-      id: true,
-      name: true,
-      phone: true,
-      university: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-    with: {
-      orders: {
-        columns: { id: true, createdAt: true },
-      },
-    },
-    orderBy: (row, { desc }) => [desc(row.updatedAt)],
-  });
-
-  return rows;
-}
+import { requireAdminSession } from "@/lib/auth";
 
 export async function listEmployees() {
   await requireAdminSession();

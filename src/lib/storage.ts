@@ -8,11 +8,11 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export function assertPaymentImage(file: File) {
   if (!ALLOWED_TYPES.has(file.type)) {
-    throw new Error("Upload a JPG, PNG, or WebP screenshot.");
+    throw new Error("Upload a JPG, PNG, or WebP image.");
   }
 
   if (file.size > MAX_BYTES) {
-    throw new Error("Screenshot must be 5 MB or smaller.");
+    throw new Error("Image must be 5 MB or smaller.");
   }
 }
 
@@ -22,10 +22,10 @@ function extensionFor(type: string) {
   return "jpg";
 }
 
-export async function savePaymentScreenshot(file: File) {
+export async function saveUploadedImage(file: File, folder: "payments" | "cases") {
   assertPaymentImage(file);
 
-  const filename = `payments/${Date.now()}-${randomBytes(6).toString("hex")}.${extensionFor(file.type)}`;
+  const filename = `${folder}/${Date.now()}-${randomBytes(6).toString("hex")}.${extensionFor(file.type)}`;
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   const useBlob = Boolean(token || process.env.BLOB_STORE_ID);
 
@@ -43,6 +43,14 @@ export async function savePaymentScreenshot(file: File) {
   await mkdir(path.dirname(diskPath), { recursive: true });
   await writeFile(diskPath, Buffer.from(await file.arrayBuffer()));
   return `local:${filename}`;
+}
+
+export function savePaymentScreenshot(file: File) {
+  return saveUploadedImage(file, "payments");
+}
+
+export function saveCaseImage(file: File) {
+  return saveUploadedImage(file, "cases");
 }
 
 export async function readPaymentScreenshot(key: string) {

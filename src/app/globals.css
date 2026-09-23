@@ -80,7 +80,8 @@ html.dark .photo-frame img {
 }
 
 html[dir="rtl"] body {
-  font-family: var(--font-noto-arabic), var(--font-atkinson), system-ui, sans-serif;
+  font-family:
+    var(--font-noto-arabic), var(--font-atkinson), system-ui, sans-serif;
 }
 
 *:focus-visible {
@@ -145,6 +146,12 @@ html[dir="rtl"] body {
   color: var(--foreground);
 }
 
+.ui-btn-sm {
+  min-height: 32px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+}
+
 .ui-card {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -171,6 +178,18 @@ html[dir="rtl"] body {
 .ui-input:focus {
   border-color: var(--brand);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+.ui-input.ui-input-grow {
+  width: auto;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.ui-input.ui-input-price {
+  width: 7rem;
+  min-width: 7rem;
+  flex: 0 0 7rem;
 }
 
 @media (hover: hover) and (pointer: fine) {

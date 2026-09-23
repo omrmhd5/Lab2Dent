@@ -7,7 +7,10 @@ function loadEnvFile() {
   }
 
   for (const fileName of [".env.local", ".env"]) {
-    const envPath = resolve(/* turbopackIgnore: true */ process.cwd(), fileName);
+    const envPath = resolve(
+      /* turbopackIgnore: true */ process.cwd(),
+      fileName,
+    );
 
     if (!existsSync(envPath)) {
       continue;
@@ -29,7 +32,14 @@ function loadEnvFile() {
       }
 
       const key = trimmed.slice(0, separatorIndex).trim();
-      const value = trimmed.slice(separatorIndex + 1).trim();
+      let value = trimmed.slice(separatorIndex + 1).trim();
+
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
 
       if (key && process.env[key] === undefined) {
         process.env[key] = value;
@@ -39,7 +49,9 @@ function loadEnvFile() {
 }
 
 function stripChannelBinding(url: string) {
-  return url.replace(/([?&])channel_binding=require&?/, "$1").replace(/[?&]$/, "");
+  return url
+    .replace(/([?&])channel_binding=require&?/, "$1")
+    .replace(/[?&]$/, "");
 }
 
 export function getDatabaseUrl() {

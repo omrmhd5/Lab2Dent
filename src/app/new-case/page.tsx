@@ -2,28 +2,38 @@ import Image from "next/image";
 import { CaseForm } from "@/components/case-form";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { db } from "@/db";
-import { categories } from "@/db/schema";
+import { universities } from "@/db/schema";
+import { listPublicCategoryGroups } from "@/server/actions/categories";
 import { getMessages } from "@/i18n/messages";
 import { getLocale } from "@/lib/locale";
+import { getInstapayConfig } from "@/lib/settings";
 import { asc, eq } from "drizzle-orm";
 
 export default async function NewCasePage() {
   const locale = await getLocale();
   const messages = getMessages(locale);
 
-  let categoryRows: { id: string; name: string; priceEgp: number }[] = [];
+  const instapay = await getInstapayConfig();
+
+  let categoryGroups: Awaited<ReturnType<typeof listPublicCategoryGroups>> = [];
+  let universityRows: { id: string; name: string }[] = [];
   try {
-    categoryRows = await db
-      .select({
-        id: categories.id,
-        name: categories.name,
-        priceEgp: categories.priceEgp,
-      })
-      .from(categories)
-      .where(eq(categories.isActive, true))
-      .orderBy(asc(categories.sortOrder), asc(categories.name));
+    categoryGroups = await listPublicCategoryGroups();
   } catch {
-    categoryRows = [];
+    categoryGroups = [];
+  }
+
+  try {
+    universityRows = await db
+      .select({
+        id: universities.id,
+        name: universities.name,
+      })
+      .from(universities)
+      .where(eq(universities.isActive, true))
+      .orderBy(asc(universities.sortOrder), asc(universities.name));
+  } catch {
+    universityRows = [];
   }
 
   return (
@@ -44,8 +54,9 @@ export default async function NewCasePage() {
             <CaseForm
               locale={locale}
               messages={messages}
-              categories={categoryRows}
-              instapayHandle={process.env.NEXT_PUBLIC_INSTAPAY_HANDLE || "01000000000"}
+              categoryGroups={categoryGroups}
+              universities={universityRows}
+              instapay={instapay}
             />
           </div>
         </div>

@@ -3,14 +3,14 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { getDirectDatabaseUrl } from "../lib/db-url";
-import { categories, staff, type StaffRole } from "./schema";
+import { siteSettings, staff, universities, type StaffRole } from "./schema";
 
-const sampleCategories = [
-  { name: "Crown - Zirconia", priceEgp: 2500, sortOrder: 0 },
-  { name: "Crown - E.max", priceEgp: 2200, sortOrder: 1 },
-  { name: "Veneer", priceEgp: 1800, sortOrder: 2 },
-  { name: "Bridge unit", priceEgp: 2500, sortOrder: 3 },
-  { name: "Night guard", priceEgp: 800, sortOrder: 4 },
+const sampleUniversities = [
+  { name: "Cairo University", sortOrder: 0 },
+  { name: "Ain Shams University", sortOrder: 1 },
+  { name: "Alexandria University", sortOrder: 2 },
+  { name: "Mansoura University", sortOrder: 3 },
+  { name: "Tanta University", sortOrder: 4 },
 ];
 
 const demoStaff: {
@@ -21,13 +21,13 @@ const demoStaff: {
 }[] = [
   {
     name: "Admin",
-    email: "admin@admin",
+    email: "admin@admin.com",
     password: "admin123",
     role: "admin",
   },
   {
     name: "Employee",
-    email: "employee@employee",
+    email: "employee@employee.com",
     password: "employee123",
     role: "employee",
   },
@@ -39,10 +39,38 @@ async function seed() {
   const db = drizzle(client);
 
   try {
-    const existingCategories = await db.select({ id: categories.id }).from(categories).limit(1);
+    const existingUniversities = await db
+      .select({ id: universities.id })
+      .from(universities)
+      .limit(1);
 
-    if (existingCategories.length === 0) {
-      await db.insert(categories).values(sampleCategories);
+    if (existingUniversities.length === 0) {
+      await db.insert(universities).values(sampleUniversities);
+    }
+
+    const [existingSettings] = await db
+      .select({ id: siteSettings.id })
+      .from(siteSettings)
+      .where(eq(siteSettings.id, 1))
+      .limit(1);
+
+    if (!existingSettings) {
+      await db.insert(siteSettings).values({
+        id: 1,
+        instapayLink: "tel:01000000000",
+      });
+    }
+
+    const legacyEmails: [string, string][] = [
+      ["admin@admin", "admin@admin.com"],
+      ["employee@employee", "employee@employee.com"],
+    ];
+
+    for (const [oldEmail, newEmail] of legacyEmails) {
+      await db
+        .update(staff)
+        .set({ email: newEmail })
+        .where(eq(staff.email, oldEmail));
     }
 
     for (const account of demoStaff) {

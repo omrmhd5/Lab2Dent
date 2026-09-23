@@ -10,13 +10,15 @@ import { SelectMenu } from "@/components/select-menu";
 
 export type OrderRow = {
   id: string;
+  orderNumber: number;
   code: string;
   categoryName: string;
   priceEgp: number;
+  costEgp: number | null;
   status: OrderStatus;
   createdAt: Date | string;
-  customerName: string;
-  customerPhone: string;
+  studentName: string;
+  studentPhone: string;
 };
 
 export function OrdersTable({ orders }: { orders: OrderRow[] }) {
@@ -30,14 +32,16 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
 
   function toggle(id: string) {
     setSelected((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
     );
   }
 
   return (
     <div>
       <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[960px] text-left text-sm">
           <thead className="border-b border-border text-muted">
             <tr>
               <th className="w-10 px-4 py-3">
@@ -48,16 +52,21 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                   aria-label="Select all orders"
                 />
               </th>
+              <th className="px-3 py-3 font-medium">No.</th>
               <th className="px-3 py-3 font-medium">Code</th>
               <th className="px-3 py-3 font-medium">Student</th>
               <th className="px-3 py-3 font-medium">Work</th>
               <th className="px-3 py-3 font-medium">Price</th>
+              <th className="px-3 py-3 font-medium">Cost</th>
+              <th className="px-3 py-3 font-medium">Profit</th>
               <th className="px-3 py-3 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
             {orders.map((order) => (
-              <tr key={order.id} className="border-b border-border last:border-0">
+              <tr
+                key={order.id}
+                className="border-b border-border last:border-0">
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
@@ -66,27 +75,42 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                     aria-label={`Select ${order.code}`}
                   />
                 </td>
+                <td className="px-3 py-3 font-mono text-muted">
+                  #{order.orderNumber}
+                </td>
                 <td className="px-3 py-3 font-mono">
-                  <Link href={`/admin/orders/${order.id}`} className="text-accent">
+                  <Link
+                    href={`/admin/orders/${order.id}`}
+                    className="text-accent">
                     {order.code}
                   </Link>
                 </td>
                 <td className="px-3 py-3">
-                  <div>{order.customerName}</div>
-                  <div className="text-muted">{order.customerPhone}</div>
+                  <div>{order.studentName}</div>
+                  <div className="text-muted">{order.studentPhone}</div>
                 </td>
                 <td className="px-3 py-3">{order.categoryName}</td>
-                <td className="px-3 py-3 font-mono">{formatEgp(order.priceEgp)}</td>
+                <td className="px-3 py-3 font-mono">
+                  {formatEgp(order.priceEgp)}
+                </td>
+                <td className="px-3 py-3 font-mono text-muted">
+                  {order.costEgp === null ? "—" : formatEgp(order.costEgp)}
+                </td>
+                <td className="px-3 py-3 font-mono">
+                  {order.costEgp === null
+                    ? "—"
+                    : formatEgp(order.priceEgp - order.costEgp)}
+                </td>
                 <td className="px-3 py-3">
                   <span
                     className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
                       order.status === "rejected"
                         ? "bg-danger/10 text-danger"
-                        : order.status === "delivered" || order.status === "ready"
+                        : order.status === "delivered" ||
+                            order.status === "ready"
                           ? "bg-accent-soft text-accent"
                           : "bg-brand-soft text-brand"
-                    }`}
-                  >
+                    }`}>
                     {STATUS_LABELS[order.status].en}
                   </span>
                 </td>
@@ -127,8 +151,7 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                 setSelected([]);
                 setError(null);
               });
-            }}
-          >
+            }}>
             Update status
           </button>
           {error ? <p className="text-sm text-danger">{error}</p> : null}

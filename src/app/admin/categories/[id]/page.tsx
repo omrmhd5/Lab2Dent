@@ -1,0 +1,95 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { asc, eq, inArray } from "drizzle-orm";
+import { CategoryManager } from "@/components/admin/category-manager";
+import { db } from "@/db";
+import { categories, categoryFields } from "@/db/schema";
+import {
+  isCategoryGroup,
+  isSelectableCategory,
+  type CategoryRecord,
+} from "@/lib/categories";
+
+export default async function CategoryDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+
+  const [group] = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.id, id))
+    .limit(1);
+
+  if (!group || !isCategoryGroup(group as CategoryRecord)) {
+    notFound();
+  }
+
+  const children = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.parentId, id))
+    .orderBy(asc(categories.sortOrder), asc(categories.name));
+
+  const subcategories = children.filter((row) =>
+    isSelectableCategory(row as CategoryRecord),
+  );
+
+  const fields =
+    subcategories.length === 0
+      ? []
+      : await db
+          .select()
+          .from(categoryFields)
+          .where(
+            inArray(
+              categoryFields.categoryId,
+              subcategories.map((row) => row.id),
+            ),
+          )
+          .orderBy(asc(categoryFields.sortOrder), asc(categoryFields.label));
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <Link href="/admin/categories" className="text-sm text-muted">
+          Back to categories
+        </Link>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight">{group.name}</h1>
+        <p className="mt-2 max-w-[55ch] text-sm text-muted">
+          Edit this category, its subcategories, and the questions students answer
+          for each one.
+        </p>
+      </div>
+      <CategoryManager
+        group={{
+          id: group.id,
+          parentId: group.parentId,
+          name: group.name,
+          priceEgp: group.priceEgp,
+          costEgp: group.costEgp,
+          isActive: group.isActive,
+          sortOrder: group.sortOrder,
+        }}
+        subcategories={subcategories.map((row) => ({
+          id: row.id,
+          parentId: row.parentId,
+          name: row.name,
+          priceEgp: row.priceEgp,
+          costEgp: row.costEgp,
+          isActive: row.isActive,
+          sortOrder: row.sortOrder,
+        }))}
+        fields={fields.map((field) => ({
+          id: field.id,
+          categoryId: field.categoryId,
+          label: field.label,
+          type: field.type,
+          required: field.required,
+        }))}
+      />
+    </div>
+  );
+}

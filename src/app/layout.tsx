@@ -24,7 +24,7 @@ const notoArabic = Noto_Sans_Arabic({
 
 export const metadata: Metadata = {
   title: "Lab2Dent",
-  description: "Register a dental lab case, pay with Instapay, and track it with a code.",
+  description: "We handle the rest — register a dental lab case, pay with Instapay, and track it with a code.",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
