@@ -4,12 +4,7 @@ import { useActionState, useMemo, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ArrowSquareOut,
-  Check,
-} from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, ArrowSquareOut } from "@phosphor-icons/react";
 import type { Messages } from "@/i18n/messages";
 import { createCase, type CreateCaseState } from "@/server/actions/orders";
 import type { InstapayConfig } from "@/lib/instapay";
@@ -52,11 +47,22 @@ export function CaseForm({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [universityId, setUniversityId] = useState(universities[0]?.id ?? "");
+  const availableGroups = useMemo(
+    () => categoryGroups.filter((group) => group.items.length > 0),
+    [categoryGroups],
+  );
+  const [groupId, setGroupId] = useState(availableGroups[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState(
+    availableGroups[0]?.items[0]?.id ?? "",
+  );
   const selectableItems = useMemo(
     () => flattenSelectableItems(categoryGroups),
     [categoryGroups],
   );
-  const [categoryId, setCategoryId] = useState(selectableItems[0]?.id ?? "");
+  const activeGroup = useMemo(
+    () => availableGroups.find((group) => group.id === groupId) ?? null,
+    [availableGroups, groupId],
+  );
   const [textValues, setTextValues] = useState<Record<string, string>>({});
   const [fileReady, setFileReady] = useState<Record<string, boolean>>({});
 
@@ -74,6 +80,14 @@ export function CaseForm({
   const BackIcon = locale === "ar" ? ArrowRight : ArrowLeft;
   const NextIcon = locale === "ar" ? ArrowLeft : ArrowRight;
 
+  function selectGroup(id: string) {
+    setGroupId(id);
+    const group = availableGroups.find((item) => item.id === id);
+    setCategoryId(group?.items[0]?.id ?? "");
+    setTextValues({});
+    setFileReady({});
+  }
+
   function selectCategory(id: string) {
     setCategoryId(id);
     setTextValues({});
@@ -83,7 +97,7 @@ export function CaseForm({
   function canContinue() {
     if (step === 0) return Boolean(name && phone && universityId);
     if (step === 1) {
-      if (!categoryId || !selected) return false;
+      if (!groupId || !categoryId || !selected) return false;
       return selected.fields.every((field) => {
         if (!field.required) return true;
         if (field.type === "text") return Boolean(textValues[field.id]?.trim());
@@ -172,57 +186,40 @@ export function CaseForm({
 
         {step === 1 ? (
           <>
-            {categoryGroups.length === 0 ? (
+            {availableGroups.length === 0 ? (
               <p className="max-w-[45ch] text-muted">{messages.emptyCatalog}</p>
             ) : (
-              <fieldset className="space-y-6">
-                <legend className="mb-1 text-sm font-bold">
-                  {messages.category}
-                </legend>
-                {categoryGroups.map((group) => (
-                  <div key={group.id} className="space-y-3">
-                    <p className="text-sm font-bold text-brand">{group.name}</p>
-                    <div className="grid gap-3">
-                      {group.items.map((item) => {
-                        const active = categoryId === item.id;
-                        return (
-                          <label
-                            key={item.id}
-                            className={`ui-card ui-card-hover ui-press flex cursor-pointer items-center justify-between gap-4 p-4 ${
-                              active ? "border-accent ring-2 ring-accent" : ""
-                            }`}>
-                            <span className="flex items-center gap-3">
-                              <input
-                                type="radio"
-                                name="categoryId"
-                                value={item.id}
-                                checked={active}
-                                onChange={() => selectCategory(item.id)}
-                                className="sr-only"
-                              />
-                              <span
-                                aria-hidden="true"
-                                className={`grid size-6 place-items-center rounded-full border ${
-                                  active
-                                    ? "border-accent bg-accent text-white"
-                                    : "border-border"
-                                }`}>
-                                {active ? (
-                                  <Check size={14} weight="bold" />
-                                ) : null}
-                              </span>
-                              <span className="font-bold">{item.name}</span>
-                            </span>
-                            <span className="font-mono text-sm">
-                              {formatEgp(item.priceEgp, locale)}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </fieldset>
+              <div className="space-y-5">
+                <Field label={messages.categoryGroup}>
+                  <SelectMenu
+                    value={groupId}
+                    onChange={selectGroup}
+                    options={availableGroups.map((group) => ({
+                      value: group.id,
+                      label: group.name,
+                    }))}
+                    placeholder={messages.categoryGroupPlaceholder}
+                    ariaLabel={messages.categoryGroup}
+                    emptyLabel={messages.emptyCatalog}
+                  />
+                </Field>
+                {activeGroup ? (
+                  <Field label={messages.category}>
+                    <SelectMenu
+                      name="categoryId"
+                      value={categoryId}
+                      onChange={selectCategory}
+                      options={activeGroup.items.map((item) => ({
+                        value: item.id,
+                        label: `${item.name} — ${formatEgp(item.priceEgp, locale)}`,
+                      }))}
+                      placeholder={messages.categoryPlaceholder}
+                      ariaLabel={messages.category}
+                      emptyLabel={messages.emptyCatalog}
+                    />
+                  </Field>
+                ) : null}
+              </div>
             )}
           </>
         ) : null}
@@ -279,7 +276,10 @@ export function CaseForm({
                   </dd>
                 </div>
                 {selected.fields
-                  .filter((field) => field.type === "text" && textValues[field.id]?.trim())
+                  .filter(
+                    (field) =>
+                      field.type === "text" && textValues[field.id]?.trim(),
+                  )
                   .map((field) => (
                     <div key={field.id} className="flex justify-between gap-4">
                       <dt className="text-muted">{field.label}</dt>

@@ -3,7 +3,12 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { categories, categoryFields, orders } from "@/db/schema";
+import {
+  categories,
+  categoryFields,
+  orderFieldValues,
+  orders,
+} from "@/db/schema";
 import {
   buildCategoryGroups,
   isCategoryGroup,
@@ -12,6 +17,8 @@ import {
   type CategoryRecord,
 } from "@/lib/categories";
 import { requireStaffSession } from "@/lib/auth";
+import { removeOrdersFromCategoryStats } from "@/lib/category-stats";
+import { deleteStoredImages } from "@/lib/storage";
 
 function toRecord(row: typeof categories.$inferSelect): CategoryRecord {
   return {
@@ -20,6 +27,10 @@ function toRecord(row: typeof categories.$inferSelect): CategoryRecord {
     name: row.name,
     priceEgp: row.priceEgp,
     costEgp: row.costEgp,
+    confirmedOrderCount: row.confirmedOrderCount,
+    confirmedTotalPriceEgp: row.confirmedTotalPriceEgp,
+    confirmedTotalCostEgp: row.confirmedTotalCostEgp,
+    confirmedTotalProfitEgp: row.confirmedTotalProfitEgp,
     isActive: row.isActive,
     sortOrder: row.sortOrder,
   };
@@ -273,68 +284,79 @@ export async function deleteCategory(id: string) {
 
   const record = toRecord(row);
 
-  if (isCategoryGroup(record)) {
-    const children = await db
-      .select({ id: categories.id })
-      .from(categories)
-      .where(eq(categories.parentId, id));
-
-    const childIds = children.map((child) => child.id);
-    const usedChild =
-      childIds.length > 0
-        ? await db
-            .select({ id: orders.id })
-            .from(orders)
-            .where(inArray(orders.categoryId, childIds))
-            .limit(1)
-        : [];
-
-    if (usedChild.length > 0) {
-      await db
-        .update(categories)
-        .set({ isActive: false, updatedAt: new Date() })
-        .where(eq(categories.id, id));
-      await db
-        .update(categories)
-        .set({ isActive: false, updatedAt: new Date() })
-        .where(eq(categories.parentId, id));
-      revalidateCatalog();
-      return {
-        ok: true as const,
-        mode: "hidden" as const,
-        message: "Hidden from students because existing orders use it.",
-      };
-    }
-
-    await db.delete(categories).where(eq(categories.id, id));
-    revalidateCatalog();
-    return { ok: true as const, mode: "deleted" as const };
-  }
-
-  if (!isSelectableCategory(record)) {
+  if (!isCategoryGroup(record) && !isSelectableCategory(record)) {
     return { error: "That item cannot be deleted." };
   }
 
-  const [used] = await db
-    .select({ id: orders.id })
-    .from(orders)
-    .where(eq(orders.categoryId, id))
-    .limit(1);
+  const imageKeys = await db.transaction(async (tx) => {
+    async function keysFor(orderIds: string[]) {
+      if (orderIds.length === 0) return [] as Array<string | null>;
+      const shots = await tx
+        .select({ paymentScreenshotKey: orders.paymentScreenshotKey })
+        .from(orders)
+        .where(inArray(orders.id, orderIds));
+      const fields = await tx
+        .select({ imageKey: orderFieldValues.imageKey })
+        .from(orderFieldValues)
+        .where(inArray(orderFieldValues.orderId, orderIds));
+      return [
+        ...shots.map((row) => row.paymentScreenshotKey),
+        ...fields.map((row) => row.imageKey),
+      ];
+    }
 
-  if (used) {
-    await db
-      .update(categories)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(categories.id, id));
-    revalidateCatalog();
-    return {
-      ok: true as const,
-      mode: "hidden" as const,
-      message: "Hidden from students because an order already uses it.",
-    };
-  }
+    if (isCategoryGroup(record)) {
+      const children = await tx
+        .select({ id: categories.id })
+        .from(categories)
+        .where(eq(categories.parentId, id));
 
-  await db.delete(categories).where(eq(categories.id, id));
+      const childIds = children.map((child) => child.id);
+
+      if (childIds.length > 0) {
+        const affectedOrders = await tx
+          .select({
+            id: orders.id,
+            categoryId: orders.categoryId,
+            priceEgp: orders.priceEgp,
+            statsCostEgp: orders.statsCostEgp,
+            statsProfitEgp: orders.statsProfitEgp,
+          })
+          .from(orders)
+          .where(inArray(orders.categoryId, childIds));
+
+        await removeOrdersFromCategoryStats(tx, affectedOrders);
+        const keys = await keysFor(affectedOrders.map((order) => order.id));
+        await tx.delete(orders).where(inArray(orders.categoryId, childIds));
+        await tx.delete(categories).where(eq(categories.id, id));
+        return keys;
+      }
+
+      await tx.delete(categories).where(eq(categories.id, id));
+      return [] as Array<string | null>;
+    }
+
+    const affectedOrders = await tx
+      .select({
+        id: orders.id,
+        categoryId: orders.categoryId,
+        priceEgp: orders.priceEgp,
+        statsCostEgp: orders.statsCostEgp,
+        statsProfitEgp: orders.statsProfitEgp,
+      })
+      .from(orders)
+      .where(eq(orders.categoryId, id));
+
+    await removeOrdersFromCategoryStats(tx, affectedOrders);
+    const keys = await keysFor(affectedOrders.map((order) => order.id));
+    await tx.delete(orders).where(eq(orders.categoryId, id));
+    await tx.delete(categories).where(eq(categories.id, id));
+    return keys;
+  });
+
+  await deleteStoredImages(imageKeys);
+
   revalidateCatalog();
-  return { ok: true as const, mode: "deleted" as const };
+  revalidatePath("/admin");
+  return { ok: true as const };
 }

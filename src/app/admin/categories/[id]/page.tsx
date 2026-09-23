@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { asc, eq, inArray } from "drizzle-orm";
+import { CategoryAnalyticsSummary } from "@/components/admin/category-analytics-summary";
+import { CategoryGroupDeleteButton } from "@/components/admin/category-group-delete-button";
 import { CategoryManager } from "@/components/admin/category-manager";
+import { categoryRecordToAnalytics } from "@/lib/category-analytics";
 import { db } from "@/db";
 import { categories, categoryFields } from "@/db/schema";
 import {
@@ -54,15 +57,22 @@ export default async function CategoryDetailPage({
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/admin/categories" className="text-sm text-muted">
-          Back to categories
-        </Link>
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/admin/categories" className="text-sm text-muted">
+            Back to categories
+          </Link>
+          <CategoryGroupDeleteButton id={group.id} name={group.name} />
+        </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">{group.name}</h1>
         <p className="mt-2 max-w-[55ch] text-sm text-muted">
-          Edit this category, its subcategories, and the questions students answer
-          for each one.
+          Edit this category, its subcategories, and the questions students
+          answer for each one.
         </p>
       </div>
+      <CategoryAnalyticsSummary
+        title="This category"
+        stats={categoryRecordToAnalytics(group)}
+      />
       <CategoryManager
         group={{
           id: group.id,
@@ -70,6 +80,10 @@ export default async function CategoryDetailPage({
           name: group.name,
           priceEgp: group.priceEgp,
           costEgp: group.costEgp,
+          confirmedOrderCount: group.confirmedOrderCount,
+          confirmedTotalPriceEgp: group.confirmedTotalPriceEgp,
+          confirmedTotalCostEgp: group.confirmedTotalCostEgp,
+          confirmedTotalProfitEgp: group.confirmedTotalProfitEgp,
           isActive: group.isActive,
           sortOrder: group.sortOrder,
         }}
@@ -79,6 +93,10 @@ export default async function CategoryDetailPage({
           name: row.name,
           priceEgp: row.priceEgp,
           costEgp: row.costEgp,
+          confirmedOrderCount: row.confirmedOrderCount,
+          confirmedTotalPriceEgp: row.confirmedTotalPriceEgp,
+          confirmedTotalCostEgp: row.confirmedTotalCostEgp,
+          confirmedTotalProfitEgp: row.confirmedTotalProfitEgp,
           isActive: row.isActive,
           sortOrder: row.sortOrder,
         }))}

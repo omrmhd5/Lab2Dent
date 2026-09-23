@@ -1,7 +1,7 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
-import { get, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -22,7 +22,10 @@ function extensionFor(type: string) {
   return "jpg";
 }
 
-export async function saveUploadedImage(file: File, folder: "payments" | "cases") {
+export async function saveUploadedImage(
+  file: File,
+  folder: "payments" | "cases",
+) {
   assertPaymentImage(file);
 
   const filename = `${folder}/${Date.now()}-${randomBytes(6).toString("hex")}.${extensionFor(file.type)}`;
@@ -89,4 +92,32 @@ export async function readPaymentScreenshot(key: string) {
   }
 
   return null;
+}
+
+export async function deleteStoredImages(
+  keys: Array<string | null | undefined>,
+) {
+  const unique = [
+    ...new Set(keys.filter((key): key is string => Boolean(key))),
+  ];
+  if (unique.length === 0) return;
+
+  const blobPathnames = unique
+    .filter((key) => key.startsWith("blob:"))
+    .map((key) => key.slice("blob:".length));
+
+  if (blobPathnames.length > 0) {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    await del(blobPathnames, token ? { token } : {});
+  }
+
+  await Promise.all(
+    unique
+      .filter((key) => key.startsWith("local:"))
+      .map(async (key) => {
+        const relative = key.slice("local:".length);
+        const diskPath = path.join(process.cwd(), ".data", "uploads", relative);
+        await unlink(diskPath).catch(() => undefined);
+      }),
+  );
 }

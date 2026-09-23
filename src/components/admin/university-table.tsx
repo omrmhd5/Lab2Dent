@@ -3,6 +3,11 @@
 import { useEffect, useState, useTransition } from "react";
 import { UniversityForm } from "@/components/admin/university-form";
 import { deleteUniversity } from "@/server/actions/universities";
+import {
+  ConfirmDeleteButton,
+  DeleteIconButton,
+  EditIconButton,
+} from "@/components/admin/icon-action-buttons";
 import { ModalOverlay } from "@/components/modal-overlay";
 
 type University = {
@@ -74,13 +79,7 @@ function ConfirmDeleteDialog({
             onClick={onCancel}>
             Cancel
           </button>
-          <button
-            type="button"
-            disabled={pending}
-            className="ui-press ui-btn ui-btn-sm bg-danger text-white"
-            onClick={onConfirm}>
-            {pending ? "Deleting…" : "Delete"}
-          </button>
+          <ConfirmDeleteButton pending={pending} onClick={onConfirm} />
         </div>
       </div>
     </ModalOverlay>
@@ -207,18 +206,11 @@ function UniversityRow({
       </td>
       <td className="px-4 py-3">
         <div className="flex justify-end gap-1.5">
-          <button
-            type="button"
-            className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
-            onClick={() => setEditing(true)}>
-            Edit
-          </button>
-          <button
-            type="button"
-            className="ui-press ui-btn ui-btn-sm bg-danger/10 text-danger"
-            onClick={onRequestDelete}>
-            Delete
-          </button>
+          <EditIconButton onClick={() => setEditing(true)} />
+          <DeleteIconButton
+            label={`Delete ${university.name}`}
+            onClick={onRequestDelete}
+          />
         </div>
       </td>
     </tr>

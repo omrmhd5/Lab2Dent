@@ -1,5 +1,7 @@
+import { CategoryAnalyticsSummary } from "@/components/admin/category-analytics-summary";
 import { CategoryGroupForm } from "@/components/admin/category-form";
 import { CategoryTable } from "@/components/admin/category-table";
+import { sumCategoryAnalytics } from "@/lib/category-analytics";
 import { listCategories } from "@/server/actions/categories";
 
 export default async function CategoriesPage() {
@@ -11,6 +13,8 @@ export default async function CategoriesPage() {
   } catch {
     loadError = true;
   }
+
+  const allStats = sumCategoryAnalytics(rows);
 
   return (
     <div className="space-y-8">
@@ -25,9 +29,12 @@ export default async function CategoriesPage() {
           </p>
         ) : null}
       </div>
-      <div className="ui-card">
-        <h2 className="mb-4 text-sm font-bold">Add category</h2>
-        <CategoryGroupForm />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="ui-card">
+          <h2 className="mb-4 text-sm font-bold">Add category</h2>
+          <CategoryGroupForm />
+        </div>
+        <CategoryAnalyticsSummary title="All categories" stats={allStats} />
       </div>
       <CategoryTable initial={rows} />
     </div>

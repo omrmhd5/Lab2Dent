@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { CategoryGroupDeleteButton } from "@/components/admin/category-group-delete-button";
 import {
   isCategoryGroup,
   isSelectableCategory,
   type CategoryRecord,
 } from "@/lib/categories";
+import { formatEgp } from "@/lib/utils";
 
 function StatusPill({ active }: { active: boolean }) {
   return (
@@ -24,7 +26,7 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
   const signature = initial
     .map(
       (row) =>
-        `${row.id}:${row.name}:${row.priceEgp}:${row.costEgp}:${row.isActive}`,
+        `${row.id}:${row.name}:${row.priceEgp}:${row.costEgp}:${row.confirmedOrderCount}:${row.confirmedTotalPriceEgp}:${row.confirmedTotalCostEgp}:${row.confirmedTotalProfitEgp}:${row.isActive}`,
     )
     .join("|");
 
@@ -55,12 +57,16 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
   }, [rows]);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface">
-      <table className="w-full text-left text-sm">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+      <table className="w-full min-w-[960px] text-left text-sm">
         <thead className="border-b border-border text-muted">
           <tr>
             <th className="px-4 py-3 font-medium">Category</th>
             <th className="px-4 py-3 font-medium">Subcategories</th>
+            <th className="px-4 py-3 font-medium">Orders</th>
+            <th className="px-4 py-3 font-medium">Total prices</th>
+            <th className="px-4 py-3 font-medium">Total costs</th>
+            <th className="px-4 py-3 font-medium">Total profit</th>
             <th className="px-4 py-3 font-medium">Status</th>
             <th className="px-4 py-3 font-medium">
               <span className="sr-only">Actions</span>
@@ -70,7 +76,7 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
         <tbody>
           {groups.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-4 py-10 text-muted">
+              <td colSpan={8} className="px-4 py-10 text-muted">
                 No categories yet. Add one above.
               </td>
             </tr>
@@ -83,15 +89,33 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
                   className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-bold">{group.name}</td>
                   <td className="px-4 py-3">{count}</td>
+                  <td className="px-4 py-3 font-mono">
+                    {group.confirmedOrderCount}
+                  </td>
+                  <td className="px-4 py-3 font-mono">
+                    {formatEgp(group.confirmedTotalPriceEgp)}
+                  </td>
+                  <td className="px-4 py-3 font-mono">
+                    {formatEgp(group.confirmedTotalCostEgp)}
+                  </td>
+                  <td className="px-4 py-3 font-mono">
+                    {formatEgp(group.confirmedTotalProfitEgp)}
+                  </td>
                   <td className="px-4 py-3">
                     <StatusPill active={group.isActive} />
                   </td>
-                  <td className="px-4 py-3 text-end">
-                    <Link
-                      href={`/admin/categories/${group.id}`}
-                      className="ui-press ui-btn ui-btn-secondary ui-btn-sm">
-                      View
-                    </Link>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1.5">
+                      <Link
+                        href={`/admin/categories/${group.id}`}
+                        className="ui-press ui-btn ui-btn-secondary ui-btn-sm">
+                        View
+                      </Link>
+                      <CategoryGroupDeleteButton
+                        id={group.id}
+                        name={group.name}
+                      />
+                    </div>
                   </td>
                 </tr>
               );

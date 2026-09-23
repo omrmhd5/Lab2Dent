@@ -1,6 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import {
+  DeleteIconButton,
+  EditIconButton,
+} from "@/components/admin/icon-action-buttons";
 import { SelectMenu } from "@/components/select-menu";
 import {
   createCategoryField,
@@ -94,6 +98,10 @@ export function CategoryFieldsEditor({
   );
 }
 
+function fieldTypeLabel(type: CategoryFieldType) {
+  return type === "image" ? "Image" : "Text";
+}
+
 function FieldEditor({
   categoryId,
   field,
@@ -101,8 +109,12 @@ function FieldEditor({
   categoryId: string;
   field: FieldRow;
 }) {
+  const [editing, setEditing] = useState(false);
   const [state, action, pending] = useActionState(
-    async (_prev: { error?: string } | undefined, formData: FormData) => {
+    async (
+      _prev: { error?: string; ok?: true } | undefined,
+      formData: FormData,
+    ) => {
       return updateCategoryField(formData);
     },
     undefined,
@@ -114,39 +126,67 @@ function FieldEditor({
     undefined,
   );
 
+  useEffect(() => {
+    if (state && "ok" in state && state.ok) {
+      setEditing(false);
+    }
+  }, [state]);
+
   return (
     <div className="rounded-2xl border border-border p-3">
-      <div className="flex flex-nowrap items-center gap-2">
-        <form action={action} className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
-          <input type="hidden" name="id" value={field.id} />
-          <input type="hidden" name="categoryId" value={categoryId} />
-          <input
-            className="ui-input ui-input-grow"
-            name="label"
-            defaultValue={field.label}
-            aria-label="Field label"
-            required
-          />
-          <TypeSelect defaultValue={field.type} />
-          <RequiredCheck defaultChecked={field.required} />
+      {editing ? (
+        <div className="flex flex-nowrap items-center gap-2">
+          <form
+            action={action}
+            className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
+            <input type="hidden" name="id" value={field.id} />
+            <input type="hidden" name="categoryId" value={categoryId} />
+            <input
+              className="ui-input ui-input-grow"
+              name="label"
+              defaultValue={field.label}
+              aria-label="Field label"
+              required
+            />
+            <TypeSelect defaultValue={field.type} />
+            <RequiredCheck defaultChecked={field.required} />
+            <button
+              type="submit"
+              disabled={pending}
+              className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
+              {pending ? "Saving…" : "Save"}
+            </button>
+          </form>
           <button
-            type="submit"
+            type="button"
+            className="ui-press ui-btn ui-btn-secondary ui-btn-sm shrink-0"
             disabled={pending}
-            className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
-            {pending ? "Saving…" : "Save"}
+            onClick={() => setEditing(false)}>
+            Cancel
           </button>
-        </form>
-        <form action={deleteAction}>
-          <input type="hidden" name="id" value={field.id} />
-          <input type="hidden" name="categoryId" value={categoryId} />
-          <button
-            type="submit"
-            disabled={deletePending}
-            className="ui-press ui-btn ui-btn-sm shrink-0 bg-danger/10 text-danger">
-            {deletePending ? "Deleting…" : "Delete"}
-          </button>
-        </form>
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="min-w-0 flex-1 font-bold">{field.label}</p>
+          <p className="text-sm text-muted">{fieldTypeLabel(field.type)}</p>
+          <p className="text-sm text-muted">
+            {field.required ? "Required" : "Optional"}
+          </p>
+          <EditIconButton
+            label={`Edit ${field.label}`}
+            onClick={() => setEditing(true)}
+          />
+          <form action={deleteAction}>
+            <input type="hidden" name="id" value={field.id} />
+            <input type="hidden" name="categoryId" value={categoryId} />
+            <DeleteIconButton
+              type="submit"
+              label={`Delete ${field.label}`}
+              pending={deletePending}
+            />
+          </form>
+        </div>
+      )}
       {state && "error" in state && state.error ? (
         <p className="mt-2 text-sm text-danger">{state.error}</p>
       ) : null}

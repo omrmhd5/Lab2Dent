@@ -39,7 +39,10 @@ export function SelectMenu({
   const selected = value ?? internal;
   const selectedOption = options.find((option) => option.value === selected);
   const [activeIndex, setActiveIndex] = useState(() =>
-    Math.max(0, options.findIndex((option) => option.value === selected)),
+    Math.max(
+      0,
+      options.findIndex((option) => option.value === selected),
+    ),
   );
 
   useEffect(() => {
@@ -79,10 +82,19 @@ export function SelectMenu({
   }
 
   function onTriggerKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
-    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+    if (
+      event.key === "ArrowDown" ||
+      event.key === "Enter" ||
+      event.key === " "
+    ) {
       event.preventDefault();
       setOpen(true);
-      setActiveIndex(Math.max(0, options.findIndex((option) => option.value === selected)));
+      setActiveIndex(
+        Math.max(
+          0,
+          options.findIndex((option) => option.value === selected),
+        ),
+      );
     }
   }
 
@@ -94,7 +106,9 @@ export function SelectMenu({
       setActiveIndex((current) => (current + 1) % options.length);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      setActiveIndex((current) => (current - 1 + options.length) % options.length);
+      setActiveIndex(
+        (current) => (current - 1 + options.length) % options.length,
+      );
     } else if (event.key === "Home") {
       event.preventDefault();
       setActiveIndex(0);
@@ -120,11 +134,15 @@ export function SelectMenu({
         aria-labelledby={labelId}
         aria-label={ariaLabel}
         onClick={() => {
-          setActiveIndex(Math.max(0, options.findIndex((option) => option.value === selected)));
+          setActiveIndex(
+            Math.max(
+              0,
+              options.findIndex((option) => option.value === selected),
+            ),
+          );
           setOpen((current) => !current);
         }}
-        onKeyDown={onTriggerKeyDown}
-      >
+        onKeyDown={onTriggerKeyDown}>
         <span className={selectedOption ? "font-bold" : "text-muted"}>
           {selectedOption?.label ?? placeholder}
         </span>
@@ -142,12 +160,15 @@ export function SelectMenu({
           role="listbox"
           tabIndex={0}
           aria-label={ariaLabel}
-          aria-activedescendant={options[activeIndex] ? `${optionId}-${activeIndex}` : undefined}
+          aria-activedescendant={
+            options[activeIndex] ? `${optionId}-${activeIndex}` : undefined
+          }
           onKeyDown={onListKeyDown}
           className={`absolute start-0 z-50 max-h-[min(20rem,70vh)] w-max min-w-full overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-surface p-1 shadow-[var(--shadow-lg)] outline-none focus-visible:ring-2 focus-visible:ring-brand ${
-            menuPlacement === "up" ? "bottom-[calc(100%+0.5rem)]" : "top-[calc(100%+0.5rem)]"
-          }`}
-        >
+            menuPlacement === "up"
+              ? "bottom-[calc(100%+0.5rem)]"
+              : "top-[calc(100%+0.5rem)]"
+          }`}>
           {options.length === 0 ? (
             <li className="px-3 py-3 text-sm text-muted">{emptyLabel}</li>
           ) : (
@@ -164,10 +185,14 @@ export function SelectMenu({
                     isActive ? "bg-brand-soft text-brand" : ""
                   } ${isSelected && !isActive ? "text-brand" : ""}`}
                   onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => choose(option.value)}
-                >
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    choose(option.value);
+                  }}>
                   {option.label}
-                  {isSelected ? <Check size={16} weight="bold" aria-hidden="true" /> : null}
+                  {isSelected ? (
+                    <Check size={16} weight="bold" aria-hidden="true" />
+                  ) : null}
                 </li>
               );
             })

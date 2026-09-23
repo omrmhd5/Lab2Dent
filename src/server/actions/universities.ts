@@ -1,10 +1,11 @@
 "use server";
 
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { orders, universities } from "@/db/schema";
+import { orderFieldValues, orders, universities } from "@/db/schema";
 import { requireStaffSession } from "@/lib/auth";
+import { deleteStoredImages } from "@/lib/storage";
 
 export async function listUniversities(includeInactive = false) {
   const rows = await db
@@ -80,10 +81,33 @@ export async function deleteUniversity(id: string) {
     return { error: "That university was not found." };
   }
 
-  await db.transaction(async (tx) => {
+  const imageKeys = await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({
+        id: orders.id,
+        paymentScreenshotKey: orders.paymentScreenshotKey,
+      })
+      .from(orders)
+      .where(eq(orders.studentUniversity, row.name));
+    const orderIds = existing.map((order) => order.id);
+    const fields =
+      orderIds.length === 0
+        ? []
+        : await tx
+            .select({ imageKey: orderFieldValues.imageKey })
+            .from(orderFieldValues)
+            .where(inArray(orderFieldValues.orderId, orderIds));
+
     await tx.delete(orders).where(eq(orders.studentUniversity, row.name));
     await tx.delete(universities).where(eq(universities.id, row.id));
+
+    return [
+      ...existing.map((order) => order.paymentScreenshotKey),
+      ...fields.map((field) => field.imageKey),
+    ];
   });
+
+  await deleteStoredImages(imageKeys);
 
   revalidatePath("/admin/universities");
   revalidatePath("/admin");

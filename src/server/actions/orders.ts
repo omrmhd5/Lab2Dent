@@ -14,12 +14,20 @@ import {
 } from "@/db/schema";
 import { requireStaffSession } from "@/lib/auth";
 import { generateOrderCode } from "@/lib/order-code";
-import { saveCaseImage, savePaymentScreenshot } from "@/lib/storage";
+import {
+  deleteStoredImages,
+  saveCaseImage,
+  savePaymentScreenshot,
+} from "@/lib/storage";
 import {
   formatCategoryLabel,
   isSelectableCategory,
   type CategoryRecord,
 } from "@/lib/categories";
+import {
+  applyOrderStatusStatsTransition,
+  removeOrdersFromCategoryStats,
+} from "@/lib/category-stats";
 import { ORDER_STATUSES } from "@/lib/status";
 import { isEgyptianMobile, normalizePhone } from "@/lib/utils";
 
@@ -231,6 +239,23 @@ export async function bulkUpdateStatus(
   }
 
   await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({
+        id: orders.id,
+        status: orders.status,
+        categoryId: orders.categoryId,
+        priceEgp: orders.priceEgp,
+        statsCostEgp: orders.statsCostEgp,
+        statsProfitEgp: orders.statsProfitEgp,
+      })
+      .from(orders)
+      .where(inArray(orders.id, orderIds));
+
+    for (const order of existing) {
+      if (order.status === status) continue;
+      await applyOrderStatusStatsTransition(tx, order, order.status, status);
+    }
+
     await tx
       .update(orders)
       .set({
@@ -250,11 +275,53 @@ export async function bulkUpdateStatus(
   });
 
   revalidatePath("/admin");
+  revalidatePath("/admin/categories");
   return { ok: true as const };
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   return bulkUpdateStatus([orderId], status);
+}
+
+export async function deleteOrders(orderIds: string[]) {
+  await requireStaffSession();
+
+  if (orderIds.length === 0) {
+    return { error: "Select at least one order." };
+  }
+
+  const imageKeys = await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({
+        id: orders.id,
+        categoryId: orders.categoryId,
+        priceEgp: orders.priceEgp,
+        statsCostEgp: orders.statsCostEgp,
+        statsProfitEgp: orders.statsProfitEgp,
+        paymentScreenshotKey: orders.paymentScreenshotKey,
+      })
+      .from(orders)
+      .where(inArray(orders.id, orderIds));
+
+    const fieldImages = await tx
+      .select({ imageKey: orderFieldValues.imageKey })
+      .from(orderFieldValues)
+      .where(inArray(orderFieldValues.orderId, orderIds));
+
+    await removeOrdersFromCategoryStats(tx, existing);
+    await tx.delete(orders).where(inArray(orders.id, orderIds));
+
+    return [
+      ...existing.map((order) => order.paymentScreenshotKey),
+      ...fieldImages.map((field) => field.imageKey),
+    ];
+  });
+
+  await deleteStoredImages(imageKeys);
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/categories");
+  return { ok: true as const };
 }
 
 export async function listOrders(filters: {

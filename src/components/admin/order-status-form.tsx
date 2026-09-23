@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import type { OrderStatus } from "@/db/schema";
 import { ORDER_STATUSES, STATUS_LABELS } from "@/lib/status";
@@ -13,39 +14,38 @@ export function OrderStatusForm({
   orderId: string;
   status: OrderStatus;
 }) {
+  const router = useRouter();
   const [pending, start] = useTransition();
 
   return (
     <form
-      className="flex flex-wrap items-end gap-3"
+      className="space-y-3"
       onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         const next = String(form.get("status")) as OrderStatus;
         start(async () => {
           await updateOrderStatus(orderId, next);
+          router.refresh();
         });
       }}
     >
-      <label className="space-y-2">
-        <span className="block text-sm font-medium">Status</span>
-        <SelectMenu
-          name="status"
-          defaultValue={status}
-          className="min-w-56"
-          ariaLabel="Status"
-          options={ORDER_STATUSES.map((value) => ({
-            value,
-            label: STATUS_LABELS[value].en,
-          }))}
-        />
-      </label>
+      <SelectMenu
+        name="status"
+        defaultValue={status}
+        className="w-full"
+        ariaLabel="Status"
+        options={ORDER_STATUSES.map((value) => ({
+          value,
+          label: STATUS_LABELS[value].en,
+        }))}
+      />
       <button
         type="submit"
         disabled={pending}
-        className="ui-press ui-btn ui-btn-primary"
+        className="ui-press ui-btn ui-btn-primary w-full"
       >
-        Save status
+        {pending ? "Saving…" : "Save status"}
       </button>
     </form>
   );

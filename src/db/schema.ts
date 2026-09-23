@@ -55,6 +55,16 @@ export const categories = pgTable(
     name: text("name").notNull(),
     priceEgp: integer("price_egp"),
     costEgp: integer("cost_egp"),
+    confirmedOrderCount: integer("confirmed_order_count").notNull().default(0),
+    confirmedTotalPriceEgp: integer("confirmed_total_price_egp")
+      .notNull()
+      .default(0),
+    confirmedTotalCostEgp: integer("confirmed_total_cost_egp")
+      .notNull()
+      .default(0),
+    confirmedTotalProfitEgp: integer("confirmed_total_profit_egp")
+      .notNull()
+      .default(0),
     isActive: boolean("is_active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -94,6 +104,8 @@ export const orders = pgTable(
     }),
     categoryName: text("category_name").notNull(),
     priceEgp: integer("price_egp").notNull(),
+    statsCostEgp: integer("stats_cost_egp"),
+    statsProfitEgp: integer("stats_profit_egp"),
     shade: text("shade"),
     toothNotes: text("tooth_notes"),
     extraNotes: text("extra_notes"),
@@ -187,4 +199,5 @@ export const orderEvents = pgTable(
 
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
 export type StaffRole = (typeof staffRoleEnum.enumValues)[number];
-export type CategoryFieldType = (typeof categoryFieldTypeEnum.enumValues)[number];
+export type CategoryFieldType =
+  (typeof categoryFieldTypeEnum.enumValues)[number];

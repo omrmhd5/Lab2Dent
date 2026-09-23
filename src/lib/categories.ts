@@ -4,6 +4,10 @@ export type CategoryRecord = {
   name: string;
   priceEgp: number | null;
   costEgp: number | null;
+  confirmedOrderCount: number;
+  confirmedTotalPriceEgp: number;
+  confirmedTotalCostEgp: number;
+  confirmedTotalProfitEgp: number;
   isActive: boolean;
   sortOrder: number;
 };
@@ -84,7 +88,9 @@ export function buildCategoryGroups(
       id: "legacy",
       name: "Other",
       items: legacyItems
-        .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+        .sort(
+          (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+        )
         .map((item) => ({
           id: item.id,
           name: item.name,

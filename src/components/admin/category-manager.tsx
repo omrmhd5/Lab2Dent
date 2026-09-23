@@ -8,6 +8,11 @@ import {
   SubcategoryForm,
 } from "@/components/admin/category-form";
 import { CategoryFieldsEditor } from "@/components/admin/category-fields-editor";
+import {
+  ConfirmDeleteButton,
+  DeleteIconButton,
+  EditIconButton,
+} from "@/components/admin/icon-action-buttons";
 import { deleteCategory } from "@/server/actions/categories";
 import { ModalOverlay } from "@/components/modal-overlay";
 import type { CategoryFieldType } from "@/db/schema";
@@ -39,7 +44,7 @@ function StatusPill({ active }: { active: boolean }) {
   );
 }
 
-function ConfirmDeleteDialog({
+export function ConfirmDeleteDialog({
   target,
   pending,
   notice,
@@ -62,8 +67,8 @@ function ConfirmDeleteDialog({
 
   const message =
     target.kind === "group"
-      ? `Delete "${target.name}" and all its subcategories? This cannot be undone.`
-      : `Delete subcategory "${target.name}"? This cannot be undone.`;
+      ? `Delete "${target.name}" and all its subcategories? All related orders will be deleted permanently. This cannot be undone.`
+      : `Delete subcategory "${target.name}"? All orders for this work type will be deleted permanently. This cannot be undone.`;
 
   return (
     <ModalOverlay
@@ -93,13 +98,7 @@ function ConfirmDeleteDialog({
             onClick={onCancel}>
             Cancel
           </button>
-          <button
-            type="button"
-            disabled={pending}
-            className="ui-press ui-btn ui-btn-sm bg-danger text-white"
-            onClick={onConfirm}>
-            {pending ? "Deleting…" : "Delete"}
-          </button>
+          <ConfirmDeleteButton pending={pending} onClick={onConfirm} />
         </div>
       </div>
     </ModalOverlay>
@@ -118,7 +117,6 @@ export function CategoryManager({
   const router = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   function remove(id: string, leavePage: boolean) {
@@ -127,12 +125,6 @@ export function CategoryManager({
       const result = await deleteCategory(id);
       if (result && "error" in result && result.error) {
         setDeleteNotice(result.error);
-        return;
-      }
-      if (result && "mode" in result && result.mode === "hidden") {
-        setDeleteTarget(null);
-        setBanner(result.message ?? "Hidden from students.");
-        router.refresh();
         return;
       }
       setDeleteTarget(null);
@@ -146,25 +138,6 @@ export function CategoryManager({
 
   return (
     <div className="space-y-8">
-      {banner ? (
-        <p className="text-sm font-bold text-accent" role="status">
-          {banner}
-        </p>
-      ) : null}
-
-      <button
-        type="button"
-        className="ui-press text-sm font-bold text-danger"
-        onClick={() =>
-          setDeleteTarget({
-            id: group.id,
-            name: group.name,
-            kind: "group",
-          })
-        }>
-        Delete category
-      </button>
-
       <section className="ui-card space-y-3">
         <p className="text-sm font-bold">Edit category</p>
         <CategoryGroupForm group={group} layout="row" />
@@ -271,18 +244,8 @@ function SubcategoryCard({
               : `Profit ${formatEgp(subcategory.priceEgp - subcategory.costEgp)}`}
           </p>
           <StatusPill active={subcategory.isActive} />
-          <button
-            type="button"
-            className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
-            onClick={() => setEditing(true)}>
-            Edit
-          </button>
-          <button
-            type="button"
-            className="ui-press ui-btn ui-btn-sm bg-danger/10 text-danger"
-            onClick={onRequestDelete}>
-            Delete
-          </button>
+          <EditIconButton onClick={() => setEditing(true)} />
+          <DeleteIconButton onClick={onRequestDelete} />
         </div>
       )}
 
