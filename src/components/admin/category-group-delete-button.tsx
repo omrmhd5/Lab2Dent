@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/admin/category-manager";
 import { DeleteIconButton } from "@/components/admin/icon-action-buttons";
 import { deleteCategory } from "@/server/actions/categories";
+import { reportAction } from "@/components/toast";
 
 export function CategoryGroupDeleteButton({
   id,
@@ -23,6 +24,7 @@ export function CategoryGroupDeleteButton({
     setNotice(null);
     start(async () => {
       const result = await deleteCategory(id);
+      reportAction(result, "Category deleted.");
       if (result && "error" in result && result.error) {
         setNotice(result.error);
         return;

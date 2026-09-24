@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { toast } from "@/components/toast";
+import { SubmitButton } from "@/components/submit-button";
 import { loginStaff, type LoginState } from "@/server/actions/auth";
 import type { Messages } from "@/i18n/messages";
 
@@ -14,6 +16,10 @@ export function LoginForm({
   from: string;
 }) {
   const [state, action, pending] = useActionState(loginStaff, initial);
+
+  useEffect(() => {
+    if (state.error) toast.error(messages.loginError);
+  }, [state, messages.loginError]);
 
   return (
     <form action={action} className="space-y-5">
@@ -37,9 +43,9 @@ export function LoginForm({
           {messages.loginError}
         </p>
       ) : null}
-      <button type="submit" disabled={pending} className="ui-press ui-btn ui-btn-primary w-full">
+      <SubmitButton pending={pending} className="ui-press ui-btn ui-btn-primary w-full">
         {messages.signIn}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { Spinner } from "@/components/spinner";
+import { reportAction } from "@/components/toast";
 import {
   DeleteIconButton,
   EditIconButton,
@@ -58,6 +60,10 @@ export function CategoryFieldsEditor({
     undefined,
   );
 
+  useEffect(() => {
+    reportAction(createState, "Field added.");
+  }, [createState]);
+
   return (
     <div className="space-y-6">
       <form
@@ -78,6 +84,7 @@ export function CategoryFieldsEditor({
           type="submit"
           disabled={createPending}
           className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
+          {createPending ? <Spinner /> : null}
           {createPending ? "Adding…" : "Add"}
         </button>
       </form>
@@ -119,7 +126,7 @@ function FieldEditor({
     },
     undefined,
   );
-  const [, deleteAction, deletePending] = useActionState(
+  const [deleteState, deleteAction, deletePending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
       return deleteCategoryField(formData);
     },
@@ -127,10 +134,14 @@ function FieldEditor({
   );
 
   useEffect(() => {
-    if (state && "ok" in state && state.ok) {
-      setEditing(false);
-    }
+    if (!state) return;
+    reportAction(state, "Field saved.");
+    if ("ok" in state && state.ok) setEditing(false);
   }, [state]);
+
+  useEffect(() => {
+    reportAction(deleteState, "Field deleted.");
+  }, [deleteState]);
 
   return (
     <div className="rounded-2xl border border-border p-3">
@@ -154,6 +165,7 @@ function FieldEditor({
               type="submit"
               disabled={pending}
               className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
+              {pending ? <Spinner /> : null}
               {pending ? "Saving…" : "Save"}
             </button>
           </form>

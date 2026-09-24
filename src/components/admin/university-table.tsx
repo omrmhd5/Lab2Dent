@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { UniversityForm } from "@/components/admin/university-form";
 import { deleteUniversity } from "@/server/actions/universities";
+import { reportAction } from "@/components/toast";
 import {
   ConfirmDeleteButton,
   DeleteIconButton,
@@ -107,6 +108,7 @@ export function UniversityTable({ initial }: { initial: University[] }) {
     setDeleteError(null);
     start(async () => {
       const result = await deleteUniversity(deleteId);
+      reportAction(result, "University deleted.");
       if (result && "error" in result && result.error) {
         setDeleteError(result.error);
         return;

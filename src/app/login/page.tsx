@@ -16,12 +16,12 @@ export default async function LoginPage({
 
   return (
     <main className="grid min-h-dvh md:grid-cols-2">
-      <section className="relative hidden overflow-hidden bg-brand md:block">
+      <section className="relative hidden overflow-hidden bg-brand-solid md:block">
         <div className="absolute inset-0 bg-[url('/hero.jpg')] bg-cover bg-center opacity-40" />
-        <div className="relative flex h-full flex-col justify-between p-10 text-white">
+        <div className="relative flex h-full flex-col justify-between p-10 text-on-brand">
           <BrandMark label={messages.brand} href="/" inverse />
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.14em] text-white/80">
+            <p className="text-sm font-bold uppercase tracking-[0.14em] text-on-brand/80">
               {messages.navStaff}
             </p>
             <p className="mt-4 max-w-[16ch] text-5xl font-bold tracking-tight">

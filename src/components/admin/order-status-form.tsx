@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import type { OrderStatus } from "@/db/schema";
 import { STATUS_LABELS, selectableStatuses } from "@/lib/status";
+import { Spinner } from "@/components/spinner";
+import { reportAction } from "@/components/toast";
 import { updateOrderStatus } from "@/server/actions/orders";
 import { SelectMenu } from "@/components/select-menu";
 
@@ -36,8 +38,9 @@ export function OrderStatusForm({
         const form = new FormData(event.currentTarget);
         const next = String(form.get("status")) as OrderStatus;
         start(async () => {
-          await updateOrderStatus(orderId, next);
-          router.refresh();
+          const result = await updateOrderStatus(orderId, next);
+          reportAction(result, "Status saved.");
+          if (result && "ok" in result && result.ok) router.refresh();
         });
       }}>
       <SelectMenu
@@ -54,6 +57,7 @@ export function OrderStatusForm({
         type="submit"
         disabled={pending}
         className="ui-press ui-btn ui-btn-primary w-full">
+        {pending ? <Spinner /> : null}
         {pending ? "Saving…" : "Save status"}
       </button>
     </form>

@@ -14,6 +14,7 @@ import {
   EditIconButton,
 } from "@/components/admin/icon-action-buttons";
 import { deleteCategory } from "@/server/actions/categories";
+import { reportAction } from "@/components/toast";
 import { ModalOverlay } from "@/components/modal-overlay";
 import type { CategoryFieldType } from "@/db/schema";
 import type { CategoryRecord } from "@/lib/categories";
@@ -123,6 +124,7 @@ export function CategoryManager({
     setDeleteNotice(null);
     start(async () => {
       const result = await deleteCategory(id);
+      reportAction(result, "Deleted.");
       if (result && "error" in result && result.error) {
         setDeleteNotice(result.error);
         return;

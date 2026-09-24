@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
+import { Spinner } from "@/components/spinner";
 import type { Messages } from "@/i18n/messages";
 
 export function TrackForm({ messages }: { messages: Messages }) {
   const router = useRouter();
   const [code, setCode] = useState("");
+  const [pending, start] = useTransition();
 
   return (
     <form
@@ -15,7 +17,8 @@ export function TrackForm({ messages }: { messages: Messages }) {
       onSubmit={(event) => {
         event.preventDefault();
         const trimmed = code.trim().toUpperCase();
-        if (trimmed) router.push(`/track/${trimmed}`);
+        if (!trimmed) return;
+        start(() => router.push(`/track/${trimmed}`));
       }}
     >
       <label className="block space-y-2">
@@ -28,8 +31,16 @@ export function TrackForm({ messages }: { messages: Messages }) {
           required
         />
       </label>
-      <button type="submit" className="ui-press ui-btn ui-btn-primary w-full">
-        <MagnifyingGlass size={16} weight="bold" aria-hidden="true" />
+      <button
+        type="submit"
+        disabled={pending}
+        aria-busy={pending}
+        className="ui-press ui-btn ui-btn-primary w-full">
+        {pending ? (
+          <Spinner />
+        ) : (
+          <MagnifyingGlass size={16} weight="bold" aria-hidden="true" />
+        )}
         {messages.lookUp}
       </button>
     </form>

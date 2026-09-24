@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,8 @@ import type { InstapayConfig } from "@/lib/instapay";
 import { formatInstapayDisplay, instapayOpensInNewTab } from "@/lib/instapay";
 import { SelectMenu } from "@/components/select-menu";
 import { flattenSelectableItems, type CategoryGroup } from "@/lib/categories";
+import { Spinner } from "@/components/spinner";
+import { toast } from "@/components/toast";
 import { formatEgp } from "@/lib/utils";
 
 type University = { id: string; name: string };
@@ -43,6 +45,10 @@ export function CaseForm({
     },
     initial,
   );
+
+  useEffect(() => {
+    if (state.error) toast.error(state.error);
+  }, [state]);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -121,9 +127,13 @@ export function CaseForm({
           .replace("{total}", "3")}>
         {titles.map((title, index) => (
           <li key={title} className="flex-1">
-            <span
-              className={`block h-1.5 rounded-full ${index <= step ? "bg-accent" : "bg-border"}`}
-            />
+            <span className="block h-1.5 overflow-hidden rounded-full bg-border">
+              <span
+                className={`block h-full origin-left rounded-full bg-accent transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] rtl:origin-right ${
+                  index <= step ? "scale-x-100" : "scale-x-0"
+                }`}
+              />
+            </span>
             <span className="mt-2 hidden text-xs font-bold text-muted sm:block">
               {title}
             </span>
@@ -371,6 +381,7 @@ export function CaseForm({
             type="submit"
             disabled={pending || !selected}
             className="ui-press ui-btn ui-btn-primary ms-auto disabled:opacity-50">
+            {pending ? <Spinner /> : null}
             {pending ? messages.submitting : messages.submitCase}
           </button>
         )}

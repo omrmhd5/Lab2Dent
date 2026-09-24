@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { Spinner } from "@/components/spinner";
+import { reportAction } from "@/components/toast";
 import { createEmployee, updateEmployee } from "@/server/actions/employees";
 import { SelectMenu } from "@/components/select-menu";
 import type { StaffRole } from "@/db/schema";
@@ -49,8 +51,12 @@ export function EmployeeForm({
   );
 
   useEffect(() => {
-    if (state && "ok" in state && state.ok) onSuccess?.();
-  }, [state, onSuccess]);
+    if (!state) return;
+    reportAction(state, employee ? "Staff saved." : "Staff added.");
+    if ("ok" in state && state.ok) onSuccess?.();
+    // onSuccess identity changes when the parent re-renders; only the action result should toast.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   const universityOptions = [
     { value: "", label: "Any university" },
@@ -149,6 +155,7 @@ export function EmployeeForm({
         type="submit"
         disabled={pending}
         className="ui-press ui-btn ui-btn-primary">
+        {pending ? <Spinner /> : null}
         {pending ? "Saving…" : employee ? "Save" : "Add staff"}
       </button>
       {state && "error" in state && state.error ? (

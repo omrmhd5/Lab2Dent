@@ -51,13 +51,17 @@ export function ModalOverlay({
 
   return createPortal(
     <div
-      className={`fixed inset-0 overscroll-none ${backdropClassName} ${
+      className={`modal-scrim fixed inset-0 overscroll-none ${backdropClassName} ${
         scrollable ? "overflow-y-auto" : "overflow-hidden"
       }`}
       style={{ zIndex }}
       onClick={onBackdropClick}>
       <div className="flex min-h-dvh w-full items-center justify-center p-4">
-        <div onClick={(event) => event.stopPropagation()}>{children}</div>
+        <div
+          className="modal-panel"
+          onClick={(event) => event.stopPropagation()}>
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

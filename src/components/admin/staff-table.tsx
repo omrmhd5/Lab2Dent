@@ -10,6 +10,7 @@ import {
 import { ModalOverlay } from "@/components/modal-overlay";
 import type { StaffRole } from "@/db/schema";
 import { deleteEmployee } from "@/server/actions/employees";
+import { reportAction } from "@/components/toast";
 
 type Option = { value: string; label: string };
 
@@ -125,6 +126,7 @@ export function StaffTable({
     setDeleteError(null);
     start(async () => {
       const result = await deleteEmployee(deleteId);
+      reportAction(result, "Staff deleted.");
       if (result && "error" in result && result.error) {
         setDeleteError(result.error);
         return;

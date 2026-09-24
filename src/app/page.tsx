@@ -9,6 +9,7 @@ import {
 import { BrandLockup } from "@/components/brand-mark";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { Reveal } from "@/components/reveal";
+import { Rise } from "@/components/rise";
 import { getMessages } from "@/i18n/messages";
 import { getLocale } from "@/lib/locale";
 import { listPublicCategoryGroups } from "@/server/actions/categories";
@@ -41,8 +42,10 @@ export default async function HomePage() {
       <main id="main">
         <section className="flex min-h-[calc(100dvh-4.5rem)] items-center justify-center px-4 py-16 sm:px-6">
           <div className="flex w-full max-w-md flex-col items-center">
-            <BrandLockup label={messages.brand} slogan={messages.slogan} />
-            <div className="mt-10 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+            <Rise spring>
+              <BrandLockup label={messages.brand} slogan={messages.slogan} />
+            </Rise>
+            <Rise delay={0.08} className="mt-10 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
               <Link
                 href="/new-case"
                 className="ui-press ui-btn ui-btn-primary w-full">
@@ -53,7 +56,7 @@ export default async function HomePage() {
                 className="ui-press ui-btn ui-btn-secondary w-full">
                 {messages.navTrack}
               </Link>
-            </div>
+            </Rise>
           </div>
         </section>
 
@@ -169,19 +172,19 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="bg-brand text-white">
+        <section className="bg-brand-solid text-on-brand">
           <div className="mx-auto flex w-full max-w-[1200px] flex-col items-start gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between md:py-20">
             <div>
               <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
                 {messages.bandTitle}
               </h2>
-              <p className="mt-3 max-w-[46ch] text-white/85">
+              <p className="mt-3 max-w-[46ch] text-on-brand/85">
                 {messages.bandBody}
               </p>
             </div>
             <Link
               href="/new-case"
-              className="ui-press ui-btn min-h-12 bg-accent text-white hover:bg-accent-hover">
+              className="ui-press ui-btn ui-btn-primary min-h-12">
               {messages.navRegister}
             </Link>
           </div>

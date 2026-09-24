@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { Spinner } from "@/components/spinner";
+import { reportAction } from "@/components/toast";
 import { instapayLinkForInput } from "@/lib/instapay";
 import { updateInstapaySettings } from "@/server/actions/settings";
 
@@ -15,6 +17,10 @@ export function InstapaySettingsForm({
     },
     undefined,
   );
+
+  useEffect(() => {
+    reportAction(state, "Instapay link saved.");
+  }, [state]);
 
   return (
     <form action={formAction} className="ui-card max-w-xl space-y-4">
@@ -35,6 +41,7 @@ export function InstapaySettingsForm({
         type="submit"
         disabled={pending}
         className="ui-press ui-btn ui-btn-primary">
+        {pending ? <Spinner /> : null}
         Save Instapay
       </button>
       {state && "error" in state && state.error ? (

@@ -1,6 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
+import { Spinner } from "@/components/spinner";
+import { toast } from "@/components/toast";
 import { setLocale } from "@/server/actions/locale";
 
 export function LanguageToggle({ locale }: { locale: "en" | "ar" }) {
@@ -11,22 +13,26 @@ export function LanguageToggle({ locale }: { locale: "en" | "ar" }) {
       <button
         type="button"
         disabled={pending || locale === "en"}
-        onClick={() => start(() => setLocale("en"))}
+        onClick={() => {
+          toast.success("English");
+          start(() => setLocale("en"));
+        }}
         className={`ui-press min-h-9 min-w-9 rounded-full px-2.5 ${
-          locale === "en" ? "bg-brand text-white" : "text-muted"
-        }`}
-      >
-        EN
+          locale === "en" ? "bg-brand-solid text-on-brand" : "text-muted"
+        }`}>
+        {pending && locale !== "en" ? <Spinner className="size-3" /> : "EN"}
       </button>
       <button
         type="button"
         disabled={pending || locale === "ar"}
-        onClick={() => start(() => setLocale("ar"))}
+        onClick={() => {
+          toast.success("العربية");
+          start(() => setLocale("ar"));
+        }}
         className={`ui-press min-h-9 min-w-9 rounded-full px-2.5 ${
-          locale === "ar" ? "bg-brand text-white" : "text-muted"
-        }`}
-      >
-        AR
+          locale === "ar" ? "bg-brand-solid text-on-brand" : "text-muted"
+        }`}>
+        {pending && locale !== "ar" ? <Spinner className="size-3" /> : "AR"}
       </button>
     </div>
   );

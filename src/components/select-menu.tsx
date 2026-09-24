@@ -150,13 +150,14 @@ export function SelectMenu({
           size={16}
           weight="bold"
           aria-hidden="true"
-          className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
+          className={`shrink-0 text-muted transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open ? (
         <ul
           ref={listRef}
           id={listboxId}
+          data-placement={menuPlacement}
           role="listbox"
           tabIndex={0}
           aria-label={ariaLabel}
@@ -164,7 +165,7 @@ export function SelectMenu({
             options[activeIndex] ? `${optionId}-${activeIndex}` : undefined
           }
           onKeyDown={onListKeyDown}
-          className={`absolute start-0 z-50 max-h-[min(20rem,70vh)] w-max min-w-full overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-surface p-1 shadow-[var(--shadow-lg)] outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+          className={`menu-pop absolute start-0 z-50 max-h-[min(20rem,70vh)] w-max min-w-full overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-surface p-1 shadow-[var(--shadow-lg)] outline-none focus-visible:ring-2 focus-visible:ring-brand ${
             menuPlacement === "up"
               ? "bottom-[calc(100%+0.5rem)]"
               : "top-[calc(100%+0.5rem)]"

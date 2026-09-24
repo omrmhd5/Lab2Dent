@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Rise } from "@/components/rise";
+import { ToastOnMount } from "@/components/toast";
 import { CopyButton } from "@/components/copy-button";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { getMessages } from "@/i18n/messages";
@@ -29,7 +31,8 @@ export default async function TrackCodePage({
         <main
           id="main"
           className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-12 sm:px-6 md:py-16">
-          <div className="ui-card mx-auto max-w-xl">
+          <ToastOnMount message={messages.notFound} tone="error" />
+          <Rise className="ui-card mx-auto max-w-xl">
             <h1 className="text-4xl font-bold tracking-tight">
               {messages.trackTitle}
             </h1>
@@ -37,7 +40,7 @@ export default async function TrackCodePage({
             <Link href="/track" className="ui-press ui-btn ui-btn-primary mt-8">
               {messages.lookUp}
             </Link>
-          </div>
+          </Rise>
         </main>
         <SiteFooter messages={messages} />
       </div>
@@ -52,7 +55,8 @@ export default async function TrackCodePage({
       <main
         id="main"
         className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-12 sm:px-6 md:py-16">
-        <div className="ui-card mx-auto max-w-2xl">
+        {isNew ? <ToastOnMount message={messages.doneTitle} /> : null}
+        <Rise spring className="ui-card mx-auto max-w-2xl">
           {isNew ? (
             <p className="mb-4 text-sm font-bold text-accent">
               {messages.doneTitle}
@@ -112,7 +116,7 @@ export default async function TrackCodePage({
               </dd>
             </div>
           </dl>
-        </div>
+        </Rise>
       </main>
       <SiteFooter messages={messages} />
     </div>

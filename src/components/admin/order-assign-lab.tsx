@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SelectMenu } from "@/components/select-menu";
+import { Spinner } from "@/components/spinner";
+import { reportAction } from "@/components/toast";
 import { assignOrderToLab } from "@/server/actions/orders";
 
 export function OrderAssignLabCard({
@@ -34,6 +36,7 @@ export function OrderAssignLabCard({
             setError(null);
             start(async () => {
               const result = await assignOrderToLab(orderId, labId);
+              reportAction(result, "Lab assigned.");
               if (result && "error" in result && result.error) {
                 setError(result.error);
                 return;
@@ -52,6 +55,7 @@ export function OrderAssignLabCard({
             type="submit"
             disabled={pending || !labId}
             className="ui-press ui-btn ui-btn-primary w-full">
+            {pending ? <Spinner /> : null}
             {pending ? "Assigning…" : "Assign"}
           </button>
           {error ? <p className="text-sm text-danger">{error}</p> : null}

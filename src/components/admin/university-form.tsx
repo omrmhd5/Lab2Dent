@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { Spinner } from "@/components/spinner";
+import { reportAction } from "@/components/toast";
 import {
   createUniversity,
   updateUniversity,
@@ -30,10 +32,11 @@ export function UniversityForm({
   );
 
   useEffect(() => {
-    if (state && "ok" in state && state.ok) {
-      onSuccess?.();
-    }
-  }, [state, onSuccess]);
+    if (!state) return;
+    reportAction(state, university ? "University saved." : "University added.");
+    if ("ok" in state && state.ok) onSuccess?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   if (layout === "row") {
     return (
@@ -66,6 +69,7 @@ export function UniversityForm({
             type="submit"
             disabled={pending}
             className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
+            {pending ? <Spinner /> : null}
             {university ? "Save" : "Add university"}
           </button>
         </form>
@@ -104,6 +108,7 @@ export function UniversityForm({
         type="submit"
         disabled={pending}
         className="ui-press ui-btn ui-btn-primary">
+        {pending ? <Spinner /> : null}
         {university ? "Save" : "Add university"}
       </button>
       {state && "error" in state && state.error ? (

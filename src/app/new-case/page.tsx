@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { CaseForm } from "@/components/case-form";
+import { Rise } from "@/components/rise";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { db } from "@/db";
 import { universities } from "@/db/schema";
@@ -41,9 +42,8 @@ export default async function NewCasePage() {
       <SiteHeader locale={locale} messages={messages} />
       <main
         id="main"
-        className="mx-auto grid w-full max-w-[1200px] flex-1 items-start gap-10 px-4 py-10 sm:px-6 md:grid-cols-12 md:py-14"
-      >
-        <div className="md:col-span-7">
+        className="mx-auto grid w-full max-w-[1200px] flex-1 items-start gap-10 px-4 py-10 sm:px-6 md:grid-cols-12 md:py-14">
+        <Rise className="md:col-span-7">
           <p className="text-sm font-bold uppercase tracking-[0.14em] text-brand">
             {messages.heroEyebrow}
           </p>
@@ -59,8 +59,10 @@ export default async function NewCasePage() {
               instapay={instapay}
             />
           </div>
-        </div>
-        <div className="photo-frame relative hidden min-h-[32rem] overflow-hidden rounded-[1.75rem] bg-brand-soft shadow-[var(--shadow-lg)] md:col-span-5 md:block">
+        </Rise>
+        <Rise
+          delay={0.08}
+          className="photo-frame photo-enter relative hidden min-h-[32rem] overflow-hidden rounded-[1.75rem] bg-brand-soft shadow-[var(--shadow-lg)] md:col-span-5 md:block">
           <Image
             src="/work.jpg"
             alt={messages.workAlt}
@@ -70,7 +72,7 @@ export default async function NewCasePage() {
             className="object-cover"
             sizes="40vw"
           />
-        </div>
+        </Rise>
       </main>
       <SiteFooter messages={messages} />
     </div>

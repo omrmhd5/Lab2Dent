@@ -15,6 +15,8 @@ import {
 } from "@/components/admin/icon-action-buttons";
 import { bulkUpdateStatus, deleteOrders } from "@/server/actions/orders";
 import { SelectMenu } from "@/components/select-menu";
+import { Spinner } from "@/components/spinner";
+import { reportAction } from "@/components/toast";
 
 export type OrderRow = {
   id: string;
@@ -229,6 +231,10 @@ export function OrdersTable({
     setDeleteError(null);
     startDelete(async () => {
       const result = await deleteOrders(deleteTarget.ids);
+      reportAction(
+        result,
+        deleteTarget.ids.length === 1 ? "Order deleted." : "Orders deleted.",
+      );
       if (result && "error" in result && result.error) {
         setDeleteError(result.error);
         return;
@@ -265,6 +271,7 @@ export function OrdersTable({
             onClick={() => {
               start(async () => {
                 const result = await bulkUpdateStatus(selected, status);
+                reportAction(result, "Status saved.");
                 if ("error" in result && result.error) {
                   setError(result.error);
                   return;
@@ -274,6 +281,7 @@ export function OrdersTable({
                 router.refresh();
               });
             }}>
+            {pending ? <Spinner /> : null}
             Update status
           </button>
           {canDelete ? (

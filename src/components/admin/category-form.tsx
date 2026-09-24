@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { Spinner } from "@/components/spinner";
+import { reportAction } from "@/components/toast";
 import {
   createCategoryGroup,
   createSubcategory,
@@ -34,6 +36,11 @@ export function CategoryGroupForm({
     undefined,
   );
 
+  useEffect(() => {
+    reportAction(state, group ? "Category saved." : "Category added.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
   if (layout === "row") {
     return (
       <div className="space-y-2">
@@ -63,6 +70,7 @@ export function CategoryGroupForm({
             type="submit"
             disabled={pending}
             className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
+            {pending ? <Spinner /> : null}
             {group ? "Save" : "Add category"}
           </button>
         </form>
@@ -104,6 +112,7 @@ export function CategoryGroupForm({
         type="submit"
         disabled={pending}
         className="ui-press ui-btn ui-btn-primary">
+        {pending ? <Spinner /> : null}
         {group ? "Save" : "Add category"}
       </button>
       {state && "error" in state && state.error ? (
@@ -136,10 +145,14 @@ export function SubcategoryForm({
   );
 
   useEffect(() => {
-    if (state && "ok" in state && state.ok) {
-      onSuccess?.();
-    }
-  }, [state, onSuccess]);
+    if (!state) return;
+    reportAction(
+      state,
+      subcategory ? "Subcategory saved." : "Subcategory added.",
+    );
+    if ("ok" in state && state.ok) onSuccess?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   const [price, setPrice] = useState(
     subcategory?.priceEgp === null || subcategory?.priceEgp === undefined
@@ -213,6 +226,7 @@ export function SubcategoryForm({
             type="submit"
             disabled={pending}
             className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
+            {pending ? <Spinner /> : null}
             {subcategory ? "Save" : "Add subcategory"}
           </button>
         </form>
@@ -290,6 +304,7 @@ export function SubcategoryForm({
           type="submit"
           disabled={pending}
           className="ui-press ui-btn ui-btn-primary">
+          {pending ? <Spinner /> : null}
           {subcategory ? "Save" : "Add subcategory"}
         </button>
       </>

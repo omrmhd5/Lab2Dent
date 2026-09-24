@@ -16,6 +16,7 @@ import {
 import type { StaffRole } from "@/db/schema";
 import { logoutStaff } from "@/server/actions/auth";
 import { BrandMark } from "@/components/brand-mark";
+import { SubmitButton } from "@/components/submit-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 type NavLink = {
@@ -127,12 +128,10 @@ export function AdminNav({
           />
         </div>
         <form action={logoutStaff}>
-          <button
-            type="submit"
-            className="ui-press flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-muted">
+          <SubmitButton className="ui-press flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-muted">
             <SignOut size={18} aria-hidden="true" />
             Sign out
-          </button>
+          </SubmitButton>
         </form>
       </div>
     );
@@ -166,15 +165,17 @@ export function AdminNav({
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="nav-scrim fixed inset-0 z-40 bg-black/40 md:hidden"
           onClick={() => setOpen(false)}
         />
       ) : null}
 
       <aside
         id="admin-sidebar"
-        className={`fixed inset-y-0 start-0 z-50 flex h-dvh w-60 flex-col border-e border-border bg-surface shadow-[var(--shadow-lg)] transition-transform duration-200 ease-out md:relative md:z-auto md:h-dvh md:w-56 md:shrink-0 md:translate-x-0 md:shadow-none ${
-          open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        className={`nav-sheet fixed inset-y-0 start-0 z-50 flex h-dvh w-60 flex-col border-e border-border bg-surface shadow-[var(--shadow-lg)] md:relative md:z-auto md:h-dvh md:w-56 md:shrink-0 md:translate-x-0 md:shadow-none ${
+          open
+            ? "translate-x-0"
+            : "-translate-x-full rtl:translate-x-full md:translate-x-0"
         }`}>
         <div className="hidden border-b border-border p-4 md:block">
           <div className="flex items-center gap-2">

@@ -8,6 +8,7 @@ import {
 } from "@/components/admin/icon-action-buttons";
 import { ModalOverlay } from "@/components/modal-overlay";
 import { deleteOrders } from "@/server/actions/orders";
+import { reportAction } from "@/components/toast";
 
 function ConfirmDeleteDialog({
   label,
@@ -83,6 +84,7 @@ export function OrderDeleteButton({
     setError(null);
     start(async () => {
       const result = await deleteOrders([orderId]);
+      reportAction(result, "Order deleted.");
       if (result && "error" in result && result.error) {
         setError(result.error);
         return;

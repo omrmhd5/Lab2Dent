@@ -1,4 +1,5 @@
 import { OrdersExportButton } from "@/components/admin/orders-export-button";
+import { SubmitButton } from "@/components/submit-button";
 import { OrdersTable } from "@/components/admin/orders-table";
 import { SelectMenu } from "@/components/select-menu";
 import type { OrderStatus } from "@/db/schema";
@@ -70,9 +71,7 @@ export default async function AdminOrdersPage({
             })),
           ]}
         />
-        <button type="submit" className="ui-press ui-btn ui-btn-primary">
-          Filter
-        </button>
+        <SubmitButton className="ui-press ui-btn ui-btn-primary">Filter</SubmitButton>
         <OrdersExportButton orders={orders} role={session.role} />
       </form>
       <div className="mt-6">

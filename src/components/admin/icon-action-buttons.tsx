@@ -1,4 +1,5 @@
 import { PencilSimple, Trash } from "@phosphor-icons/react";
+import { Spinner } from "@/components/spinner";
 
 const baseClass =
   "ui-press ui-btn ui-btn-sm grid size-9 shrink-0 place-items-center";
@@ -50,6 +51,7 @@ export function ConfirmDeleteButton({
       disabled={disabled || pending}
       onClick={onClick}
       className={`ui-press ui-btn ui-btn-sm bg-danger text-white ${className}`}>
+      {pending ? <Spinner /> : null}
       {pending ? `${label}…` : label}
     </button>
   );
@@ -83,7 +85,7 @@ export function DeleteIconButton({
       disabled={disabled || pending}
       onClick={onClick}
       className={`${baseClass} ${variantClass} ${className}`}>
-      <Trash size={18} weight="bold" aria-hidden="true" />
+      {pending ? <Spinner /> : <Trash size={18} weight="bold" aria-hidden="true" />}
     </button>
   );
 }
