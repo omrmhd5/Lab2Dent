@@ -1,5 +1,4 @@
-import { and, eq, inArray, or, sql, type SQL } from "drizzle-orm";
-import { LAB_VISIBLE_STATUSES } from "@/lib/status";
+import { and, eq, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   categories,
@@ -40,9 +39,10 @@ export async function loadOrderScope(
     : undefined;
 
   if (member.role === "lab") {
-    const parts: SQL[] = [inArray(orders.status, LAB_VISIBLE_STATUSES)];
-    if (categoryMatch) parts.push(categoryMatch);
-    return { role: "lab", condition: and(...parts) };
+    return {
+      role: "lab",
+      condition: eq(orders.assignedLabId, staffId),
+    };
   }
 
   const parts: SQL[] = [];

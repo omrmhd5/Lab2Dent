@@ -121,6 +121,9 @@ export const orders = pgTable(
       () => staff.id,
       { onDelete: "set null" },
     ),
+    assignedLabId: uuid("assigned_lab_id").references(() => staff.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -132,6 +135,7 @@ export const orders = pgTable(
     uniqueIndex("orders_order_number_idx").on(table.orderNumber),
     uniqueIndex("orders_code_idx").on(table.code),
     index("orders_status_idx").on(table.status),
+    index("orders_assigned_lab_id_idx").on(table.assignedLabId),
     index("orders_created_at_idx").on(table.createdAt),
   ],
 );

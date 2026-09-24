@@ -24,6 +24,7 @@ export type OrderRow = {
   priceEgp: number;
   costEgp: number | null;
   status: OrderStatus;
+  assignedLabName: string | null;
   createdAt: Date | string;
   studentName: string;
   studentPhone: string;
@@ -420,6 +421,7 @@ export function OrdersTable({
                   <td className="w-px px-2 py-3 whitespace-nowrap">
                     <OrderStatusPill
                       status={order.status}
+                      labName={order.assignedLabName}
                       className="px-2.5 py-1"
                     />
                   </td>

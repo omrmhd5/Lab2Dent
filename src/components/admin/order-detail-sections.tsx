@@ -212,6 +212,7 @@ export function OrderHistoryCard({
   events: {
     id: string;
     status: OrderStatus;
+    note: string | null;
     createdAt: Date;
     staff: { name: string } | null;
   }[];
@@ -230,6 +231,11 @@ export function OrderHistoryCard({
             />
             <OrderStatusPill
               status={event.status}
+              labName={
+                event.note?.startsWith("Assigned to ")
+                  ? event.note.slice("Assigned to ".length)
+                  : null
+              }
               className="px-2.5 py-1 text-xs"
             />
             <p className="mt-0.5 text-sm text-muted">

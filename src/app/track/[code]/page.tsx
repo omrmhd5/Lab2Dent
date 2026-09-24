@@ -3,7 +3,7 @@ import { CopyButton } from "@/components/copy-button";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { getMessages } from "@/i18n/messages";
 import { getLocale } from "@/lib/locale";
-import { statusLabel } from "@/lib/status";
+import { OrderStatusPill } from "@/components/admin/status-pill";
 import { formatDateTime, formatEgp } from "@/lib/utils";
 import { findPublicOrder } from "@/server/actions/orders";
 
@@ -81,8 +81,12 @@ export default async function TrackCodePage({
               <dt className="text-sm font-bold text-muted">
                 {messages.status}
               </dt>
-              <dd className="mt-1 text-lg font-bold">
-                {statusLabel(order.status, locale)}
+              <dd className="mt-2">
+                <OrderStatusPill
+                  status={order.status}
+                  locale={locale}
+                  className="text-sm"
+                />
               </dd>
             </div>
             <div className="rounded-2xl bg-brand-soft p-4">

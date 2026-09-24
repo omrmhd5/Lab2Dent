@@ -29,7 +29,7 @@ export default async function EmployeesPage() {
         <h1 className="text-3xl font-bold tracking-tight">Staff</h1>
         <p className="mt-2 max-w-[55ch] text-sm text-muted">
           Admins see everything. Assign an employee a university, a category, or
-          both. Assign each lab account one category.
+          both. Assign a lab from the order itself.
         </p>
       </div>
       <div className="ui-card">

@@ -1,13 +1,9 @@
+import { OrdersExportButton } from "@/components/admin/orders-export-button";
 import { OrdersTable } from "@/components/admin/orders-table";
 import { SelectMenu } from "@/components/select-menu";
 import type { OrderStatus } from "@/db/schema";
 import { requireStaffSession } from "@/lib/auth";
-import {
-  LAB_VISIBLE_STATUSES,
-  ORDER_STATUSES,
-  STATUS_LABELS,
-  statusesForRole,
-} from "@/lib/status";
+import { ORDER_STATUSES, STATUS_LABELS, statusesForRole } from "@/lib/status";
 import { listOrders } from "@/server/actions/orders";
 import { listUniversities } from "@/server/actions/universities";
 
@@ -25,7 +21,7 @@ export default async function AdminOrdersPage({
   const selectedUniversity = university?.trim() || "all";
 
   const isLab = session.role === "lab";
-  const statusOptions = isLab ? LAB_VISIBLE_STATUSES : ORDER_STATUSES;
+  const statusOptions = ORDER_STATUSES;
 
   const [orders, universities] = await Promise.all([
     listOrders({
@@ -77,6 +73,7 @@ export default async function AdminOrdersPage({
         <button type="submit" className="ui-press ui-btn ui-btn-primary">
           Filter
         </button>
+        <OrdersExportButton orders={orders} role={session.role} />
       </form>
       <div className="mt-6">
         <OrdersTable

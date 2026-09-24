@@ -1,6 +1,7 @@
 "use server";
 
 import { and, asc, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
@@ -9,6 +10,7 @@ import {
   orderEvents,
   orderFieldValues,
   orders,
+  staff,
   universities,
   type OrderStatus,
 } from "@/db/schema";
@@ -275,6 +277,7 @@ export async function bulkUpdateStatus(
       .update(orders)
       .set({
         status,
+        assignedLabId: null,
         lastStatusByStaffId: session.staffId,
         updatedAt: new Date(),
       })
@@ -296,6 +299,98 @@ export async function bulkUpdateStatus(
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   return bulkUpdateStatus([orderId], status);
+}
+
+export async function listLabStaff() {
+  const session = await requireStaffSession();
+  if (session.role === "lab") return [];
+
+  return db
+    .select({ id: staff.id, name: staff.name })
+    .from(staff)
+    .where(and(eq(staff.role, "lab"), eq(staff.isActive, true)))
+    .orderBy(asc(staff.name));
+}
+
+export async function assignOrderToLab(orderId: string, labStaffId: string) {
+  const session = await requireStaffSession();
+  const scope = await loadOrderScope(session.staffId);
+
+  if (!scope || scope.role === "lab") {
+    return { error: "You are not allowed to assign labs." };
+  }
+
+  if (!orderId || !labStaffId) {
+    return { error: "Choose a lab." };
+  }
+
+  const [lab] = await db
+    .select({ id: staff.id, name: staff.name })
+    .from(staff)
+    .where(
+      and(
+        eq(staff.id, labStaffId),
+        eq(staff.role, "lab"),
+        eq(staff.isActive, true),
+      ),
+    )
+    .limit(1);
+
+  if (!lab) return { error: "That lab account was not found." };
+
+  const [order] = await db
+    .select({
+      id: orders.id,
+      status: orders.status,
+      assignedLabId: orders.assignedLabId,
+      categoryId: orders.categoryId,
+      priceEgp: orders.priceEgp,
+      statsCostEgp: orders.statsCostEgp,
+      statsProfitEgp: orders.statsProfitEgp,
+    })
+    .from(orders)
+    .leftJoin(categories, eq(orders.categoryId, categories.id))
+    .where(and(eq(orders.id, orderId), scope.condition))
+    .limit(1);
+
+  if (!order) return { error: "That order was not found." };
+  if (order.assignedLabId === lab.id && order.status === "sent_to_lab") {
+    return { error: "This order is already assigned to that lab." };
+  }
+
+  const nextStatus = "sent_to_lab" as const;
+
+  await db.transaction(async (tx) => {
+    if (order.status !== nextStatus) {
+      await applyOrderStatusStatsTransition(
+        tx,
+        order,
+        order.status,
+        nextStatus,
+      );
+    }
+
+    await tx
+      .update(orders)
+      .set({
+        assignedLabId: lab.id,
+        status: nextStatus,
+        lastStatusByStaffId: session.staffId,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, order.id));
+
+    await tx.insert(orderEvents).values({
+      orderId: order.id,
+      status: nextStatus,
+      note: `Assigned to ${lab.name}`,
+      staffId: session.staffId,
+    });
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/orders/${orderId}`);
+  return { ok: true as const };
 }
 
 export async function deleteOrders(orderIds: string[]) {
@@ -383,6 +478,7 @@ export async function listOrders(filters: {
     conditions.push(or(...searchConditions));
   }
 
+  const assignedLab = alias(staff, "assigned_lab");
   const rows = await db
     .select({
       id: orders.id,
@@ -392,6 +488,7 @@ export async function listOrders(filters: {
       priceEgp: orders.priceEgp,
       costEgp: categories.costEgp,
       status: orders.status,
+      assignedLabName: assignedLab.name,
       createdAt: orders.createdAt,
       studentName: orders.studentName,
       studentPhone: orders.studentPhone,
@@ -399,6 +496,7 @@ export async function listOrders(filters: {
     })
     .from(orders)
     .leftJoin(categories, eq(orders.categoryId, categories.id))
+    .leftJoin(assignedLab, eq(orders.assignedLabId, assignedLab.id))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(orders.createdAt));
 
@@ -422,6 +520,9 @@ export async function getOrderDetail(orderId: string) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, orderId),
     with: {
+      assignedLab: {
+        columns: { id: true, name: true },
+      },
       events: {
         with: {
           staff: {
@@ -443,6 +544,11 @@ export async function findPublicOrder(code: string) {
 
   const order = await db.query.orders.findFirst({
     where: eq(orders.code, normalized),
+    with: {
+      assignedLab: {
+        columns: { name: true },
+      },
+    },
   });
 
   return order ?? null;

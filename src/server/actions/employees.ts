@@ -4,8 +4,16 @@ import bcrypt from "bcryptjs";
 import { and, asc, count, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { categories, staff, universities, type StaffRole } from "@/db/schema";
+import {
+  categories,
+  orderEvents,
+  orders,
+  staff,
+  universities,
+  type StaffRole,
+} from "@/db/schema";
 import { isCategoryGroup } from "@/lib/categories";
+import { applyOrderStatusStatsTransition } from "@/lib/category-stats";
 import { requireAdminSession } from "@/lib/auth";
 
 const ROLES: StaffRole[] = ["admin", "employee", "lab"];
@@ -54,17 +62,7 @@ async function assignmentFor(
   }
 
   if (role === "lab") {
-    if (categoryId) {
-      const [category] = await db
-        .select()
-        .from(categories)
-        .where(eq(categories.id, categoryId))
-        .limit(1);
-      if (!category || !isCategoryGroup(category)) {
-        return { error: "Pick a parent category for the lab." as const };
-      }
-    }
-    return { universityId: null, categoryId };
+    return { universityId: null, categoryId: null };
   }
 
   if (universityId) {
@@ -255,7 +253,55 @@ export async function deleteEmployee(id: string) {
     }
   }
 
-  await db.delete(staff).where(eq(staff.id, id));
+  await db.transaction(async (tx) => {
+    const assignedOrders = await tx
+      .select({
+        id: orders.id,
+        status: orders.status,
+        categoryId: orders.categoryId,
+        priceEgp: orders.priceEgp,
+        statsCostEgp: orders.statsCostEgp,
+        statsProfitEgp: orders.statsProfitEgp,
+      })
+      .from(orders)
+      .where(eq(orders.assignedLabId, id));
+
+    const nextStatus = "confirmed" as const;
+
+    for (const order of assignedOrders) {
+      if (order.status !== nextStatus) {
+        await applyOrderStatusStatsTransition(
+          tx,
+          order,
+          order.status,
+          nextStatus,
+        );
+      }
+
+      await tx
+        .update(orders)
+        .set({
+          status: nextStatus,
+          assignedLabId: null,
+          lastStatusByStaffId: session.staffId,
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, order.id));
+
+      if (order.status !== nextStatus) {
+        await tx.insert(orderEvents).values({
+          orderId: order.id,
+          status: nextStatus,
+          note: "Assigned lab removed",
+          staffId: session.staffId,
+        });
+      }
+    }
+
+    await tx.delete(staff).where(eq(staff.id, id));
+  });
+
   revalidatePath("/dashboard/employees");
+  revalidatePath("/dashboard");
   return { ok: true as const };
 }

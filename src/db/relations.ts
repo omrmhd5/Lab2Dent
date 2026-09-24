@@ -35,6 +35,12 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   lastStatusBy: one(staff, {
     fields: [orders.lastStatusByStaffId],
     references: [staff.id],
+    relationName: "order_status_staff",
+  }),
+  assignedLab: one(staff, {
+    fields: [orders.assignedLabId],
+    references: [staff.id],
+    relationName: "order_assigned_lab",
   }),
   events: many(orderEvents),
   fieldValues: many(orderFieldValues),
@@ -64,5 +70,6 @@ export const orderEventsRelations = relations(orderEvents, ({ one }) => ({
 
 export const staffRelations = relations(staff, ({ many }) => ({
   events: many(orderEvents),
-  updatedOrders: many(orders),
+  updatedOrders: many(orders, { relationName: "order_status_staff" }),
+  assignedOrders: many(orders, { relationName: "order_assigned_lab" }),
 }));

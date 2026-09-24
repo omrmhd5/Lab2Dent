@@ -20,18 +20,9 @@ export const STATUS_LABELS: Record<OrderStatus, { en: string; ar: string }> = {
   rejected: { en: "Rejected", ar: "مرفوض" },
 };
 
-/** Orders the lab may see in list/detail queries (DB-level filter). */
-export const LAB_VISIBLE_STATUSES: OrderStatus[] = [
-  "confirmed",
-  "sent_to_lab",
-  "in_lab",
-  "ready",
-  "delivered",
-];
-
 export function statusesForRole(role: StaffRole): OrderStatus[] {
   if (role === "admin") {
-    return ["pending", "confirmed", "sent_to_lab", "rejected"];
+    return ["pending", "confirmed", "rejected"];
   }
   if (role === "employee") {
     return ["confirmed", "rejected"];
@@ -58,7 +49,14 @@ export function selectableStatusesForOrders(
   );
 }
 
-export function statusLabel(status: OrderStatus, locale: "en" | "ar") {
+export function statusLabel(
+  status: OrderStatus,
+  locale: "en" | "ar",
+  labName?: string | null,
+) {
+  if ((status === "sent_to_lab" || status === "in_lab") && labName) {
+    return locale === "ar" ? `مُسند إلى ${labName}` : `Assigned to ${labName}`;
+  }
   return STATUS_LABELS[status][locale];
 }
 

@@ -118,9 +118,7 @@ export function EmployeeForm({
       ) : (
         <input type="hidden" name="universityId" value="" />
       )}
-      {role === "admin" ? (
-        <input type="hidden" name="categoryId" value="" />
-      ) : (
+      {role === "employee" ? (
         <label className="space-y-1">
           <span className="block text-xs text-muted">Category</span>
           <SelectMenu
@@ -130,6 +128,8 @@ export function EmployeeForm({
             options={categoryOptions}
           />
         </label>
+      ) : (
+        <input type="hidden" name="categoryId" value="" />
       )}
       {employee ? (
         <label className="flex items-center gap-2 pb-3 text-sm">

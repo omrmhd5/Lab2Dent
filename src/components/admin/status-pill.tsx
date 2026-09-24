@@ -1,17 +1,21 @@
 import type { OrderStatus } from "@/db/schema";
-import { STATUS_LABELS, statusBadgeClass } from "@/lib/status";
+import { statusBadgeClass, statusLabel } from "@/lib/status";
 
 export function OrderStatusPill({
   status,
+  labName,
+  locale = "en",
   className = "",
 }: {
   status: OrderStatus;
+  labName?: string | null;
+  locale?: "en" | "ar";
   className?: string;
 }) {
   return (
     <span
       className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${statusBadgeClass(status)} ${className}`}>
-      {STATUS_LABELS[status].en}
+      {statusLabel(status, locale, labName)}
     </span>
   );
 }

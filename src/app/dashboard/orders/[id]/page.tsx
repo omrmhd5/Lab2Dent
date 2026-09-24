@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { OrderAssignLabCard } from "@/components/admin/order-assign-lab";
 import { OrderDeleteButton } from "@/components/admin/order-delete-button";
 import {
   OrderCaseDetailsCard,
@@ -16,7 +17,7 @@ import { categories } from "@/db/schema";
 import { requireStaffSession } from "@/lib/auth";
 import { statusesForRole } from "@/lib/status";
 import { formatDateTime } from "@/lib/utils";
-import { getOrderDetail } from "@/server/actions/orders";
+import { getOrderDetail, listLabStaff } from "@/server/actions/orders";
 
 export default async function OrderDetailPage({
   params,
@@ -25,7 +26,10 @@ export default async function OrderDetailPage({
 }) {
   const { id } = await params;
   const session = await requireStaffSession();
-  const order = await getOrderDetail(id);
+  const [order, labs] = await Promise.all([
+    getOrderDetail(id),
+    session.role !== "lab" ? listLabStaff() : Promise.resolve([]),
+  ]);
   const showPrice = session.role !== "lab";
   const showMoney = session.role === "admin";
 
@@ -65,7 +69,10 @@ export default async function OrderDetailPage({
           </h1>
           <p className="mt-2 text-sm text-muted">Submitted {submittedAt}</p>
         </div>
-        <OrderStatusPill status={order.status} />
+        <OrderStatusPill
+          status={order.status}
+          labName={order.assignedLab?.name}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -86,6 +93,13 @@ export default async function OrderDetailPage({
           status={order.status}
           allowedStatuses={statusesForRole(session.role)}
         />
+        {session.role !== "lab" ? (
+          <OrderAssignLabCard
+            orderId={order.id}
+            assignedLabId={order.assignedLabId}
+            labs={labs}
+          />
+        ) : null}
       </div>
 
       <OrderCaseDetailsCard
@@ -113,6 +127,7 @@ export default async function OrderDetailPage({
           events={events.map((event) => ({
             id: event.id,
             status: event.status,
+            note: event.note,
             createdAt: event.createdAt,
             staff: event.staff,
           }))}
