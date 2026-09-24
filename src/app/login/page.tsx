@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
@@ -7,6 +8,12 @@ import { BrandMark } from "@/components/brand-mark";
 import { getMessages } from "@/i18n/messages";
 import { getLiveStaffSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale";
+import { buildPageMetadata } from "@/lib/seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return buildPageMetadata(locale, "login");
+}
 
 export default async function LoginPage({
   searchParams,

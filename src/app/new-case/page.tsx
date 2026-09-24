@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { CaseForm } from "@/components/case-form";
 import { Rise } from "@/components/rise";
@@ -7,8 +8,14 @@ import { universities } from "@/db/schema";
 import { listPublicCategoryGroups } from "@/server/actions/categories";
 import { getMessages } from "@/i18n/messages";
 import { getLocale } from "@/lib/locale";
+import { buildPageMetadata } from "@/lib/seo";
 import { getInstapayConfig } from "@/lib/settings";
 import { asc, eq } from "drizzle-orm";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return buildPageMetadata(locale, "newCase");
+}
 
 export default async function NewCasePage() {
   const locale = await getLocale();

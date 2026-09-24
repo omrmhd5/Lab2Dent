@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { Rise } from "@/components/rise";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { TrackForm } from "@/components/track-form";
 import { getMessages } from "@/i18n/messages";
 import { getLocale } from "@/lib/locale";
+import { buildPageMetadata } from "@/lib/seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return buildPageMetadata(locale, "track");
+}
 
 export default async function TrackPage() {
   const locale = await getLocale();

@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { DashboardEnter } from "@/components/dashboard-enter";
 import { DashboardI18n } from "@/components/dashboard-i18n";
 import { getDash } from "@/i18n/dashboard";
 import { requireStaffSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale";
+import { buildPageMetadata } from "@/lib/seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return buildPageMetadata(locale, "dashboard");
+}
 
 export default async function AdminLayout({
   children,

@@ -121,16 +121,23 @@ export function Toaster() {
   );
 }
 
+const shownMountToasts = new Set<string>();
+
 export function ToastOnMount({
   message,
   tone = "success",
+  onceKey,
 }: {
   message: string;
   tone?: "success" | "error";
+  onceKey?: string;
 }) {
   useEffect(() => {
+    const key = onceKey ?? `${tone}:${message}`;
+    if (shownMountToasts.has(key)) return;
+    shownMountToasts.add(key);
     toast[tone](message);
-  }, [message, tone]);
+  }, [message, tone, onceKey]);
 
   return null;
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -12,7 +13,13 @@ import { Reveal } from "@/components/reveal";
 import { Rise } from "@/components/rise";
 import { getMessages } from "@/i18n/messages";
 import { getLocale } from "@/lib/locale";
+import { buildPageMetadata } from "@/lib/seo";
 import { listPublicCategoryGroups } from "@/server/actions/categories";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return buildPageMetadata(locale, "home");
+}
 
 async function loadPrices() {
   try {

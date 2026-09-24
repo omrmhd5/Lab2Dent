@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Rise } from "@/components/rise";
 import { ToastOnMount } from "@/components/toast";
@@ -6,9 +7,19 @@ import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { getMessages } from "@/i18n/messages";
 import { pickOrderCategoryLabel } from "@/lib/categories";
 import { getLocale } from "@/lib/locale";
+import { buildTrackCodeMetadata } from "@/lib/seo";
 import { OrderStatusPill } from "@/components/admin/status-pill";
 import { formatDateTime, formatEgp } from "@/lib/utils";
 import { findPublicOrder } from "@/server/actions/orders";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ code: string }>;
+}): Promise<Metadata> {
+  const [{ code }, locale] = await Promise.all([params, getLocale()]);
+  return buildTrackCodeMetadata(locale, decodeURIComponent(code));
+}
 
 export default async function TrackCodePage({
   params,
@@ -32,7 +43,11 @@ export default async function TrackCodePage({
         <main
           id="main"
           className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-12 sm:px-6 md:py-16">
-          <ToastOnMount message={messages.notFound} tone="error" />
+          <ToastOnMount
+            message={messages.notFound}
+            tone="error"
+            onceKey={`not-found-${code}`}
+          />
           <Rise className="ui-card mx-auto max-w-xl">
             <h1 className="text-4xl font-bold tracking-tight">
               {messages.trackTitle}
@@ -56,7 +71,12 @@ export default async function TrackCodePage({
       <main
         id="main"
         className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-12 sm:px-6 md:py-16">
-        {isNew ? <ToastOnMount message={messages.doneTitle} /> : null}
+        {isNew ? (
+          <ToastOnMount
+            message={messages.doneTitle}
+            onceKey={`case-registered-${code}`}
+          />
+        ) : null}
         <Rise spring className="ui-card mx-auto max-w-2xl">
           {isNew ? (
             <p className="mb-4 text-sm font-bold text-accent">
