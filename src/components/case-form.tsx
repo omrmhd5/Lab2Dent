@@ -202,16 +202,12 @@ export function CaseForm({
             ) : (
               <div className="space-y-5">
                 <Field label={messages.categoryGroup}>
-                  <SelectMenu
+                  <CategoryGroupRadios
+                    groups={availableGroups}
+                    locale={locale}
                     value={groupId}
                     onChange={selectGroup}
-                    options={availableGroups.map((group) => ({
-                      value: group.id,
-                      label: group.name,
-                    }))}
-                    placeholder={messages.categoryGroupPlaceholder}
                     ariaLabel={messages.categoryGroup}
-                    emptyLabel={messages.emptyCatalog}
                   />
                 </Field>
                 {activeGroup ? (
@@ -222,7 +218,7 @@ export function CaseForm({
                       onChange={selectCategory}
                       options={activeGroup.items.map((item) => ({
                         value: item.id,
-                        label: `${item.name} — ${formatEgp(item.priceEgp, locale)}`,
+                        label: `${pickLocale(locale, item.name, item.nameAr)} — ${formatEgp(item.priceEgp, locale)}`,
                       }))}
                       placeholder={messages.categoryPlaceholder}
                       ariaLabel={messages.category}
@@ -409,9 +405,57 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block space-y-2">
+    <div className="block space-y-2">
       <span className="text-sm font-bold">{label}</span>
       {children}
-    </label>
+    </div>
+  );
+}
+
+function CategoryGroupRadios({
+  groups,
+  locale,
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  groups: CategoryGroup[];
+  locale: "en" | "ar";
+  value: string;
+  onChange: (id: string) => void;
+  ariaLabel: string;
+}) {
+  const twoUp = groups.length === 2;
+
+  return (
+    <div
+      role="radiogroup"
+      aria-label={ariaLabel}
+      className={`grid gap-3 ${twoUp ? "grid-cols-2" : "grid-cols-1"}`}>
+      {groups.map((group) => {
+        const selected = value === group.id;
+        const label = pickLocale(locale, group.name, group.nameAr);
+
+        return (
+          <label
+            key={group.id}
+            className={`ui-press flex min-h-14 w-full cursor-pointer items-center justify-center rounded-2xl border px-4 py-3 text-center text-sm font-bold transition-colors ${
+              selected
+                ? "border-accent bg-accent-soft text-foreground shadow-[inset_0_0_0_1px_var(--accent)]"
+                : "border-border bg-surface text-muted hover:border-brand/35"
+            }`}>
+            <input
+              type="radio"
+              name="categoryGroup"
+              value={group.id}
+              checked={selected}
+              onChange={() => onChange(group.id)}
+              className="sr-only"
+            />
+            <span>{label}</span>
+          </label>
+        );
+      })}
+    </div>
   );
 }
