@@ -28,8 +28,8 @@ export function CategoryGroupDeleteButton({
         return;
       }
       setOpen(false);
-      if (pathname === `/admin/categories/${id}`) {
-        router.push("/admin/categories");
+      if (pathname === `/dashboard/categories/${id}`) {
+        router.push("/dashboard/categories");
       } else {
         router.refresh();
       }

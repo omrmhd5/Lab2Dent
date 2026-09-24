@@ -4,7 +4,7 @@ import { asc, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { orderFieldValues, orders, universities } from "@/db/schema";
-import { requireStaffSession } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 import { deleteStoredImages } from "@/lib/storage";
 
 export async function listUniversities(includeInactive = false) {
@@ -18,7 +18,7 @@ export async function listUniversities(includeInactive = false) {
 }
 
 export async function createUniversity(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const name = String(formData.get("name") ?? "").trim();
 
@@ -38,13 +38,13 @@ export async function createUniversity(formData: FormData) {
     isActive: true,
   });
 
-  revalidatePath("/admin/universities");
+  revalidatePath("/dashboard/universities");
   revalidatePath("/new-case");
   return { ok: true as const };
 }
 
 export async function updateUniversity(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
@@ -63,13 +63,13 @@ export async function updateUniversity(formData: FormData) {
     })
     .where(eq(universities.id, id));
 
-  revalidatePath("/admin/universities");
+  revalidatePath("/dashboard/universities");
   revalidatePath("/new-case");
   return { ok: true as const };
 }
 
 export async function deleteUniversity(id: string) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const [row] = await db
     .select({ id: universities.id, name: universities.name })
@@ -109,8 +109,8 @@ export async function deleteUniversity(id: string) {
 
   await deleteStoredImages(imageKeys);
 
-  revalidatePath("/admin/universities");
-  revalidatePath("/admin");
+  revalidatePath("/dashboard/universities");
+  revalidatePath("/dashboard");
   revalidatePath("/new-case");
   return { ok: true as const };
 }

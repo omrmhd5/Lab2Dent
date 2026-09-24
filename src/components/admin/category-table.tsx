@@ -107,7 +107,7 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1.5">
                       <Link
-                        href={`/admin/categories/${group.id}`}
+                        href={`/dashboard/categories/${group.id}`}
                         className="ui-press ui-btn ui-btn-secondary ui-btn-sm">
                         View
                       </Link>

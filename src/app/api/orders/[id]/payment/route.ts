@@ -1,17 +1,23 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { orders } from "@/db/schema";
-import { getSession } from "@/lib/auth";
+import { categories, orders } from "@/db/schema";
+import { getLiveStaffSession } from "@/lib/auth";
+import { loadOrderScope } from "@/lib/order-scope";
 import { readPaymentScreenshot } from "@/lib/storage";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
+  const session = await getLiveStaffSession();
 
-  if (!session.isLoggedIn) {
+  if (!session || session.role === "lab") {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
+
+  const scope = await loadOrderScope(session.staffId);
+  if (!scope) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
@@ -19,7 +25,8 @@ export async function GET(
   const [order] = await db
     .select({ paymentScreenshotKey: orders.paymentScreenshotKey })
     .from(orders)
-    .where(eq(orders.id, id))
+    .leftJoin(categories, eq(orders.categoryId, categories.id))
+    .where(and(eq(orders.id, id), scope.condition))
     .limit(1);
 
   if (!order) {

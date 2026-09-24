@@ -1,23 +1,11 @@
 import type { ReactNode } from "react";
 import type { OrderStatus } from "@/db/schema";
-import { STATUS_LABELS } from "@/lib/status";
-import { formatEgp } from "@/lib/utils";
-import { OrderStatusForm } from "@/components/admin/order-status-form";
+import { statusDotClass } from "@/lib/status";
+import { OrderStatusPill } from "@/components/admin/status-pill";
+import { formatDateTime, formatEgp } from "@/lib/utils";
 
-export function OrderStatusPill({ status }: { status: OrderStatus }) {
-  return (
-    <span
-      className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${
-        status === "rejected"
-          ? "bg-danger/10 text-danger"
-          : status === "delivered" || status === "ready"
-            ? "bg-accent-soft text-accent"
-            : "bg-brand-soft text-brand"
-      }`}>
-      {STATUS_LABELS[status].en}
-    </span>
-  );
-}
+export { OrderStatusPill };
+import { OrderStatusForm } from "@/components/admin/order-status-form";
 
 export function DetailRow({
   label,
@@ -63,10 +51,14 @@ export function OrderWorkCard({
   categoryName,
   priceEgp,
   costEgp,
+  showPrice,
+  showMoney,
 }: {
   categoryName: string;
   priceEgp: number;
   costEgp: number | null;
+  showPrice: boolean;
+  showMoney: boolean;
 }) {
   const profit = costEgp === null ? null : priceEgp - costEgp;
 
@@ -75,17 +67,23 @@ export function OrderWorkCard({
       <h2 className="text-sm font-bold">Work</h2>
       <dl className="mt-2 divide-y divide-border">
         <DetailRow label="Service" value={categoryName} />
-        <DetailRow label="Price" value={formatEgp(priceEgp)} mono />
-        <DetailRow
-          label="Cost"
-          value={costEgp === null ? "—" : formatEgp(costEgp)}
-          mono
-        />
-        <DetailRow
-          label="Profit"
-          value={profit === null ? "—" : formatEgp(profit)}
-          mono
-        />
+        {showPrice ? (
+          <DetailRow label="Price" value={formatEgp(priceEgp)} mono />
+        ) : null}
+        {showMoney ? (
+          <DetailRow
+            label="Cost"
+            value={costEgp === null ? "—" : formatEgp(costEgp)}
+            mono
+          />
+        ) : null}
+        {showMoney ? (
+          <DetailRow
+            label="Profit"
+            value={profit === null ? "—" : formatEgp(profit)}
+            mono
+          />
+        ) : null}
       </dl>
     </section>
   );
@@ -94,15 +92,21 @@ export function OrderWorkCard({
 export function OrderStatusCard({
   orderId,
   status,
+  allowedStatuses,
 }: {
   orderId: string;
   status: OrderStatus;
+  allowedStatuses: OrderStatus[];
 }) {
   return (
     <section className="ui-card h-full">
       <h2 className="text-sm font-bold">Update status</h2>
       <div className="mt-3">
-        <OrderStatusForm orderId={orderId} status={status} />
+        <OrderStatusForm
+          orderId={orderId}
+          status={status}
+          allowedStatuses={allowedStatuses}
+        />
       </div>
     </section>
   );
@@ -221,17 +225,15 @@ export function OrderHistoryCard({
         {events.map((event, index) => (
           <li key={event.id} className="relative pb-6 ps-1 last:pb-0">
             <span
-              className="absolute -start-[calc(1.25rem+1px)] top-1.5 size-2.5 -translate-x-1/2 rounded-full bg-accent ring-4 ring-surface"
+              className={`absolute -start-[calc(1.25rem+1px)] top-1.5 size-2.5 -translate-x-1/2 rounded-full ring-4 ring-surface ${statusDotClass(event.status)}`}
               aria-hidden="true"
             />
-            <p className="text-sm font-bold">
-              {STATUS_LABELS[event.status].en}
-            </p>
+            <OrderStatusPill
+              status={event.status}
+              className="px-2.5 py-1 text-xs"
+            />
             <p className="mt-0.5 text-sm text-muted">
-              {event.createdAt.toLocaleString("en-GB", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
+              {formatDateTime(event.createdAt)}
               {event.staff?.name ? ` · ${event.staff.name}` : ""}
             </p>
             {index === 0 ? (

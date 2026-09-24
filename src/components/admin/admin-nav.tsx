@@ -13,6 +13,7 @@ import {
   Stack,
   X,
 } from "@phosphor-icons/react";
+import type { StaffRole } from "@/db/schema";
 import { logoutStaff } from "@/server/actions/auth";
 import { BrandMark } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -24,25 +25,48 @@ type NavLink = {
   exact?: boolean;
 };
 
-export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
+export function AdminNav({
+  role,
+  name,
+  email,
+}: {
+  role: StaffRole;
+  name: string;
+  email: string;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const links: NavLink[] = [
-    { href: "/admin", label: "Orders", icon: ClipboardText, exact: true },
-    { href: "/admin/categories", label: "Categories", icon: Stack },
-    { href: "/admin/universities", label: "Universities", icon: GraduationCap },
-    ...(isAdmin
+  const links: NavLink[] =
+    role === "admin"
       ? [
           {
-            href: "/admin/employees",
-            label: "Employees",
+            href: "/dashboard",
+            label: "Orders",
+            icon: ClipboardText,
+            exact: true,
+          },
+          { href: "/dashboard/categories", label: "Categories", icon: Stack },
+          {
+            href: "/dashboard/universities",
+            label: "Universities",
+            icon: GraduationCap,
+          },
+          {
+            href: "/dashboard/employees",
+            label: "Staff",
             icon: IdentificationCard,
           },
-          { href: "/admin/settings", label: "Settings", icon: Gear },
+          { href: "/dashboard/settings", label: "Settings", icon: Gear },
         ]
-      : []),
-  ];
+      : [
+          {
+            href: "/dashboard",
+            label: "Orders",
+            icon: ClipboardText,
+            exact: true,
+          },
+        ];
 
   useEffect(() => {
     setOpen(false);
@@ -91,6 +115,10 @@ export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
   function SidebarFooter() {
     return (
       <div className="mt-auto space-y-2 border-t border-border p-3">
+        <div className="px-1 pb-1">
+          <p className="truncate text-sm font-bold">{name}</p>
+          <p className="truncate text-xs text-muted">{email}</p>
+        </div>
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-bold text-muted">Theme</span>
           <ThemeToggle
@@ -114,7 +142,7 @@ export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
     <>
       <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur-md md:hidden">
         <div className="flex items-center gap-2">
-          <BrandMark label="Lab2Dent" href="/admin" />
+          <BrandMark label="Lab2Dent" href="/dashboard" />
           <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand">
             Desk
           </span>
@@ -150,7 +178,7 @@ export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
         }`}>
         <div className="hidden border-b border-border p-4 md:block">
           <div className="flex items-center gap-2">
-            <BrandMark label="Lab2Dent" href="/admin" />
+            <BrandMark label="Lab2Dent" href="/dashboard" />
             <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand">
               Desk
             </span>

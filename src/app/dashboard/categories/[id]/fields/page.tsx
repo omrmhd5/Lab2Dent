@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
+import { requireAdminSession } from "@/lib/auth";
 import { isCategoryGroup, type CategoryRecord } from "@/lib/categories";
 
 export default async function LegacyFieldsRedirect({
@@ -9,6 +10,7 @@ export default async function LegacyFieldsRedirect({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminSession();
   const { id } = await params;
   const [row] = await db
     .select()
@@ -19,11 +21,11 @@ export default async function LegacyFieldsRedirect({
   if (!row) notFound();
 
   if (isCategoryGroup(row as CategoryRecord)) {
-    redirect(`/admin/categories/${row.id}`);
+    redirect(`/dashboard/categories/${row.id}`);
   }
 
   if (row.parentId) {
-    redirect(`/admin/categories/${row.parentId}#${row.id}`);
+    redirect(`/dashboard/categories/${row.parentId}#${row.id}`);
   }
 
   notFound();

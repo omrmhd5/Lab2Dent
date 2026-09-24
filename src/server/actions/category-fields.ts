@@ -3,12 +3,16 @@
 import { asc, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { categories, categoryFields, type CategoryFieldType } from "@/db/schema";
+import {
+  categories,
+  categoryFields,
+  type CategoryFieldType,
+} from "@/db/schema";
 import { isSelectableCategory, type CategoryRecord } from "@/lib/categories";
-import { requireStaffSession } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 
 function revalidateFields() {
-  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
 }
@@ -45,7 +49,7 @@ async function nextSortOrder(categoryId: string) {
 }
 
 export async function listCategoryFields(categoryId: string) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   return db
     .select()
@@ -55,7 +59,7 @@ export async function listCategoryFields(categoryId: string) {
 }
 
 export async function createCategoryField(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const categoryId = String(formData.get("categoryId") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
@@ -82,7 +86,7 @@ export async function createCategoryField(formData: FormData) {
 }
 
 export async function updateCategoryField(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const id = String(formData.get("id") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "").trim();
@@ -107,7 +111,7 @@ export async function updateCategoryField(formData: FormData) {
 }
 
 export async function deleteCategoryField(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const id = String(formData.get("id") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "").trim();

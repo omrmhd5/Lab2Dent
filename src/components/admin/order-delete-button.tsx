@@ -88,7 +88,7 @@ export function OrderDeleteButton({
         return;
       }
       setOpen(false);
-      router.push("/admin");
+      router.push("/dashboard");
     });
   }
 

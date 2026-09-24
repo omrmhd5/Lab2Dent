@@ -3,19 +3,30 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import type { OrderStatus } from "@/db/schema";
-import { ORDER_STATUSES, STATUS_LABELS } from "@/lib/status";
+import { STATUS_LABELS, selectableStatuses } from "@/lib/status";
 import { updateOrderStatus } from "@/server/actions/orders";
 import { SelectMenu } from "@/components/select-menu";
 
 export function OrderStatusForm({
   orderId,
   status,
+  allowedStatuses,
 }: {
   orderId: string;
   status: OrderStatus;
+  allowedStatuses: OrderStatus[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const options = selectableStatuses(allowedStatuses, status);
+
+  if (options.length === 0) {
+    return (
+      <p className="text-sm text-muted">
+        No further status changes available for this order.
+      </p>
+    );
+  }
 
   return (
     <form
@@ -28,14 +39,13 @@ export function OrderStatusForm({
           await updateOrderStatus(orderId, next);
           router.refresh();
         });
-      }}
-    >
+      }}>
       <SelectMenu
         name="status"
-        defaultValue={status}
+        defaultValue={options[0]}
         className="w-full"
         ariaLabel="Status"
-        options={ORDER_STATUSES.map((value) => ({
+        options={options.map((value) => ({
           value,
           label: STATUS_LABELS[value].en,
         }))}
@@ -43,8 +53,7 @@ export function OrderStatusForm({
       <button
         type="submit"
         disabled={pending}
-        className="ui-press ui-btn ui-btn-primary w-full"
-      >
+        className="ui-press ui-btn ui-btn-primary w-full">
         {pending ? "Saving…" : "Save status"}
       </button>
     </form>

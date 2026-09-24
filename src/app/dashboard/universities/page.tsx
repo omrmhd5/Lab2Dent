@@ -1,8 +1,10 @@
 import { UniversityForm } from "@/components/admin/university-form";
 import { UniversityTable } from "@/components/admin/university-table";
+import { requireAdminSession } from "@/lib/auth";
 import { listUniversities } from "@/server/actions/universities";
 
 export default async function UniversitiesPage() {
+  await requireAdminSession();
   let rows: Awaited<ReturnType<typeof listUniversities>> = [];
   let loadError = false;
 

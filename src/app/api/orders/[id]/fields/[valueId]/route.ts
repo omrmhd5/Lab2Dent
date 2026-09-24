@@ -2,16 +2,16 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { orderFieldValues } from "@/db/schema";
-import { getSession } from "@/lib/auth";
+import { getLiveStaffSession } from "@/lib/auth";
 import { readPaymentScreenshot } from "@/lib/storage";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string; valueId: string }> },
 ) {
-  const session = await getSession();
+  const session = await getLiveStaffSession();
 
-  if (!session.isLoggedIn) {
+  if (!session) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 

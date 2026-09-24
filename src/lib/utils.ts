@@ -5,6 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function formatDateTime(
+  value: Date | string,
+  locale: "en" | "ar" = "en",
+) {
+  const date = value instanceof Date ? value : new Date(value);
+  return date.toLocaleString(locale === "ar" ? "ar-EG" : "en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    hour12: true,
+  });
+}
+
 export function formatEgp(amount: number, locale: "en" | "ar" = "en") {
   return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-EG", {
     style: "currency",

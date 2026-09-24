@@ -129,7 +129,7 @@ export function CategoryManager({
       }
       setDeleteTarget(null);
       if (leavePage) {
-        router.push("/admin/categories");
+        router.push("/dashboard/categories");
         return;
       }
       router.refresh();

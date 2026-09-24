@@ -12,7 +12,7 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
-export const staffRoleEnum = pgEnum("staff_role", ["admin", "employee"]);
+export const staffRoleEnum = pgEnum("staff_role", ["admin", "employee", "lab"]);
 
 export const categoryFieldTypeEnum = pgEnum("category_field_type", [
   "text",
@@ -37,6 +37,12 @@ export const staff = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     role: staffRoleEnum("role").notNull().default("employee"),
+    universityId: uuid("university_id").references(() => universities.id, {
+      onDelete: "set null",
+    }),
+    categoryId: uuid("category_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

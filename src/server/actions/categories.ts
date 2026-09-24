@@ -16,7 +16,7 @@ import {
   type CategoryFieldDef,
   type CategoryRecord,
 } from "@/lib/categories";
-import { requireStaffSession } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 import { removeOrdersFromCategoryStats } from "@/lib/category-stats";
 import { deleteStoredImages } from "@/lib/storage";
 
@@ -92,7 +92,7 @@ async function nextSortOrder(parentId: string | null) {
 }
 
 export async function createCategoryGroup(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Name is required." };
@@ -105,14 +105,14 @@ export async function createCategoryGroup(formData: FormData) {
     parentId: null,
   });
 
-  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
   return { ok: true as const };
 }
 
 export async function createSubcategory(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const parentId = String(formData.get("parentId") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
@@ -151,14 +151,14 @@ export async function createSubcategory(formData: FormData) {
     isActive,
   });
 
-  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
   return { ok: true as const };
 }
 
 export async function updateCategoryGroup(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
@@ -178,14 +178,14 @@ export async function updateCategoryGroup(formData: FormData) {
       .where(eq(categories.parentId, id));
   }
 
-  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
   return { ok: true as const };
 }
 
 export async function updateSubcategory(formData: FormData) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
@@ -215,14 +215,14 @@ export async function updateSubcategory(formData: FormData) {
     })
     .where(eq(categories.id, id));
 
-  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
   return { ok: true as const };
 }
 
 export async function reorderCategoryGroups(ids: string[]) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return { error: "Nothing to reorder." };
@@ -236,14 +236,14 @@ export async function reorderCategoryGroups(ids: string[]) {
     ),
   );
 
-  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
   return { ok: true as const };
 }
 
 export async function reorderSubcategories(parentId: string, ids: string[]) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const unique = [...new Set(ids.filter(Boolean))];
   if (!parentId || unique.length === 0) {
@@ -259,20 +259,20 @@ export async function reorderSubcategories(parentId: string, ids: string[]) {
     ),
   );
 
-  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
   return { ok: true as const };
 }
 
 function revalidateCatalog() {
-  revalidatePath("/admin/categories", "layout");
+  revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
 }
 
 export async function deleteCategory(id: string) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   const [row] = await db
     .select()
@@ -357,6 +357,6 @@ export async function deleteCategory(id: string) {
   await deleteStoredImages(imageKeys);
 
   revalidateCatalog();
-  revalidatePath("/admin");
+  revalidatePath("/dashboard");
   return { ok: true as const };
 }

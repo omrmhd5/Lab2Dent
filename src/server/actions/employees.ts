@@ -1,25 +1,94 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { and, eq, ne } from "drizzle-orm";
+import { and, asc, count, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { staff } from "@/db/schema";
+import { categories, staff, universities, type StaffRole } from "@/db/schema";
+import { isCategoryGroup } from "@/lib/categories";
 import { requireAdminSession } from "@/lib/auth";
+
+const ROLES: StaffRole[] = ["admin", "employee", "lab"];
+
+function parseRole(value: FormDataEntryValue | null): StaffRole | null {
+  const role = String(value ?? "");
+  return ROLES.includes(role as StaffRole) ? (role as StaffRole) : null;
+}
+
+function blankToNull(value: FormDataEntryValue | null) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
 
 export async function listEmployees() {
   await requireAdminSession();
-  return db
+
+  const rows = await db
     .select({
       id: staff.id,
       name: staff.name,
       email: staff.email,
       role: staff.role,
       isActive: staff.isActive,
+      universityId: staff.universityId,
+      categoryId: staff.categoryId,
+      universityName: universities.name,
+      categoryName: categories.name,
       createdAt: staff.createdAt,
     })
     .from(staff)
-    .orderBy(staff.createdAt);
+    .leftJoin(universities, eq(staff.universityId, universities.id))
+    .leftJoin(categories, eq(staff.categoryId, categories.id))
+    .orderBy(asc(staff.createdAt));
+
+  return rows;
+}
+
+async function assignmentFor(
+  role: StaffRole,
+  universityId: string | null,
+  categoryId: string | null,
+) {
+  if (role === "admin") {
+    return { universityId: null, categoryId: null };
+  }
+
+  if (role === "lab") {
+    if (categoryId) {
+      const [category] = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.id, categoryId))
+        .limit(1);
+      if (!category || !isCategoryGroup(category)) {
+        return { error: "Pick a parent category for the lab." as const };
+      }
+    }
+    return { universityId: null, categoryId };
+  }
+
+  if (universityId) {
+    const [university] = await db
+      .select({ id: universities.id })
+      .from(universities)
+      .where(eq(universities.id, universityId))
+      .limit(1);
+    if (!university)
+      return { error: "That university was not found." as const };
+  }
+
+  if (categoryId) {
+    const [category] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, categoryId))
+      .limit(1);
+    if (!category || !isCategoryGroup(category)) {
+      return { error: "Pick a parent category." as const };
+    }
+  }
+
+  return { universityId, categoryId };
 }
 
 export async function createEmployee(formData: FormData) {
@@ -30,17 +99,21 @@ export async function createEmployee(formData: FormData) {
     .trim()
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const role =
-    String(formData.get("role") ?? "employee") === "admin"
-      ? "admin"
-      : "employee";
+  const role = parseRole(formData.get("role"));
 
-  if (!name || !email || password.length < 8) {
+  if (!name || !email || !role || password.length < 8) {
     return {
       error:
-        "Name, email, and a password of at least 8 characters are required.",
+        "Name, email, role, and a password of at least 8 characters are required.",
     };
   }
+
+  const assignment = await assignmentFor(
+    role,
+    blankToNull(formData.get("universityId")),
+    blankToNull(formData.get("categoryId")),
+  );
+  if ("error" in assignment) return { error: assignment.error };
 
   const [existing] = await db
     .select({ id: staff.id })
@@ -57,10 +130,12 @@ export async function createEmployee(formData: FormData) {
     email,
     passwordHash: await bcrypt.hash(password, 12),
     role,
+    universityId: assignment.universityId,
+    categoryId: assignment.categoryId,
     isActive: true,
   });
 
-  revalidatePath("/admin/employees");
+  revalidatePath("/dashboard/employees");
   return { ok: true as const };
 }
 
@@ -73,15 +148,45 @@ export async function updateEmployee(formData: FormData) {
     .trim()
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const role =
-    String(formData.get("role") ?? "employee") === "admin"
-      ? "admin"
-      : "employee";
+  const role = parseRole(formData.get("role"));
   const isActive = String(formData.get("isActive") ?? "") === "on";
 
-  if (!id || !name || !email) {
-    return { error: "Name and email are required." };
+  if (!id || !name || !email || !role) {
+    return { error: "Name, email, and role are required." };
   }
+
+  const [current] = await db
+    .select({ role: staff.role, isActive: staff.isActive })
+    .from(staff)
+    .where(eq(staff.id, id))
+    .limit(1);
+
+  if (!current) return { error: "That account was not found." };
+
+  const dropsLastAdmin =
+    current.role === "admin" &&
+    current.isActive &&
+    (role !== "admin" || !isActive);
+
+  if (dropsLastAdmin) {
+    const [admins] = await db
+      .select({ total: count() })
+      .from(staff)
+      .where(and(eq(staff.role, "admin"), eq(staff.isActive, true)));
+
+    if ((admins?.total ?? 0) <= 1) {
+      return {
+        error: "Keep at least one active admin. Add another admin first.",
+      };
+    }
+  }
+
+  const assignment = await assignmentFor(
+    role,
+    blankToNull(formData.get("universityId")),
+    blankToNull(formData.get("categoryId")),
+  );
+  if ("error" in assignment) return { error: assignment.error };
 
   const [other] = await db
     .select({ id: staff.id })
@@ -96,10 +201,19 @@ export async function updateEmployee(formData: FormData) {
   const patch: {
     name: string;
     email: string;
-    role: "admin" | "employee";
+    role: StaffRole;
     isActive: boolean;
+    universityId: string | null;
+    categoryId: string | null;
     passwordHash?: string;
-  } = { name, email, role, isActive };
+  } = {
+    name,
+    email,
+    role,
+    isActive,
+    universityId: assignment.universityId,
+    categoryId: assignment.categoryId,
+  };
 
   if (password) {
     if (password.length < 8) {
@@ -109,6 +223,39 @@ export async function updateEmployee(formData: FormData) {
   }
 
   await db.update(staff).set(patch).where(eq(staff.id, id));
-  revalidatePath("/admin/employees");
+  revalidatePath("/dashboard/employees");
+  return { ok: true as const };
+}
+
+export async function deleteEmployee(id: string) {
+  const session = await requireAdminSession();
+
+  if (!id) return { error: "Missing staff id." };
+
+  if (id === session.staffId) {
+    return { error: "You cannot delete your own account." };
+  }
+
+  const [member] = await db
+    .select({ id: staff.id, role: staff.role })
+    .from(staff)
+    .where(eq(staff.id, id))
+    .limit(1);
+
+  if (!member) return { error: "That account was not found." };
+
+  if (member.role === "admin") {
+    const [admins] = await db
+      .select({ total: count() })
+      .from(staff)
+      .where(eq(staff.role, "admin"));
+
+    if ((admins?.total ?? 0) <= 1) {
+      return { error: "Keep at least one admin account." };
+    }
+  }
+
+  await db.delete(staff).where(eq(staff.id, id));
+  revalidatePath("/dashboard/employees");
   return { ok: true as const };
 }

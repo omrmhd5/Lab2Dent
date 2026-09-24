@@ -4,7 +4,7 @@ export interface SessionData {
   staffId: string;
   name: string;
   email: string;
-  role: "admin" | "employee";
+  role: "admin" | "employee" | "lab";
   isLoggedIn: boolean;
 }
 

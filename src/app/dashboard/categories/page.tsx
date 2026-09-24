@@ -2,9 +2,11 @@ import { CategoryAnalyticsSummary } from "@/components/admin/category-analytics-
 import { CategoryGroupForm } from "@/components/admin/category-form";
 import { CategoryTable } from "@/components/admin/category-table";
 import { sumCategoryAnalytics } from "@/lib/category-analytics";
+import { requireAdminSession } from "@/lib/auth";
 import { listCategories } from "@/server/actions/categories";
 
 export default async function CategoriesPage() {
+  await requireAdminSession();
   let rows: Awaited<ReturnType<typeof listCategories>> = [];
   let loadError = false;
 

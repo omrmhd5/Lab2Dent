@@ -12,7 +12,8 @@ import {
   universities,
   type OrderStatus,
 } from "@/db/schema";
-import { requireStaffSession } from "@/lib/auth";
+import { requireAdminSession, requireStaffSession } from "@/lib/auth";
+import { loadOrderScope } from "@/lib/order-scope";
 import { generateOrderCode } from "@/lib/order-code";
 import {
   deleteStoredImages,
@@ -28,7 +29,7 @@ import {
   applyOrderStatusStatsTransition,
   removeOrdersFromCategoryStats,
 } from "@/lib/category-stats";
-import { ORDER_STATUSES } from "@/lib/status";
+import { statusesForRole } from "@/lib/status";
 import { isEgyptianMobile, normalizePhone } from "@/lib/utils";
 
 export type CreateCaseState = {
@@ -229,30 +230,44 @@ export async function bulkUpdateStatus(
   status: OrderStatus,
 ) {
   const session = await requireStaffSession();
+  const scope = await loadOrderScope(session.staffId);
+
+  if (!scope) return { error: "You are not allowed to update orders." };
 
   if (orderIds.length === 0) {
     return { error: "Select at least one order." };
   }
 
-  if (!ORDER_STATUSES.includes(status)) {
-    return { error: "Invalid status." };
+  if (!statusesForRole(scope.role).includes(status)) {
+    return { error: "You cannot set that status." };
   }
 
-  await db.transaction(async (tx) => {
-    const existing = await tx
-      .select({
-        id: orders.id,
-        status: orders.status,
-        categoryId: orders.categoryId,
-        priceEgp: orders.priceEgp,
-        statsCostEgp: orders.statsCostEgp,
-        statsProfitEgp: orders.statsProfitEgp,
-      })
-      .from(orders)
-      .where(inArray(orders.id, orderIds));
+  const existing = await db
+    .select({
+      id: orders.id,
+      status: orders.status,
+      categoryId: orders.categoryId,
+      priceEgp: orders.priceEgp,
+      statsCostEgp: orders.statsCostEgp,
+      statsProfitEgp: orders.statsProfitEgp,
+    })
+    .from(orders)
+    .leftJoin(categories, eq(orders.categoryId, categories.id))
+    .where(and(inArray(orders.id, orderIds), scope.condition));
 
-    for (const order of existing) {
-      if (order.status === status) continue;
+  if (existing.length !== orderIds.length) {
+    return { error: "Those orders are outside your assignment." };
+  }
+
+  const toUpdate = existing.filter((order) => order.status !== status);
+  if (toUpdate.length === 0) {
+    return { error: "Those orders already have that status." };
+  }
+
+  const idsToUpdate = toUpdate.map((order) => order.id);
+
+  await db.transaction(async (tx) => {
+    for (const order of toUpdate) {
       await applyOrderStatusStatsTransition(tx, order, order.status, status);
     }
 
@@ -263,10 +278,10 @@ export async function bulkUpdateStatus(
         lastStatusByStaffId: session.staffId,
         updatedAt: new Date(),
       })
-      .where(inArray(orders.id, orderIds));
+      .where(inArray(orders.id, idsToUpdate));
 
     await tx.insert(orderEvents).values(
-      orderIds.map((orderId) => ({
+      idsToUpdate.map((orderId) => ({
         orderId,
         status,
         staffId: session.staffId,
@@ -274,8 +289,8 @@ export async function bulkUpdateStatus(
     );
   });
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/categories");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/categories");
   return { ok: true as const };
 }
 
@@ -284,7 +299,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 }
 
 export async function deleteOrders(orderIds: string[]) {
-  await requireStaffSession();
+  await requireAdminSession();
 
   if (orderIds.length === 0) {
     return { error: "Select at least one order." };
@@ -319,21 +334,37 @@ export async function deleteOrders(orderIds: string[]) {
 
   await deleteStoredImages(imageKeys);
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/categories");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/categories");
   return { ok: true as const };
 }
 
 export async function listOrders(filters: {
   status?: OrderStatus | "all";
   q?: string;
+  universityId?: string;
 }) {
-  await requireStaffSession();
+  const session = await requireStaffSession();
+  const scope = await loadOrderScope(session.staffId);
+  if (!scope) return [];
 
   const conditions = [];
+  if (scope.condition) conditions.push(scope.condition);
 
   if (filters.status && filters.status !== "all") {
     conditions.push(eq(orders.status, filters.status));
+  }
+
+  const universityId = filters.universityId?.trim();
+  if (universityId && universityId !== "all") {
+    const [university] = await db
+      .select({ name: universities.name })
+      .from(universities)
+      .where(eq(universities.id, universityId))
+      .limit(1);
+    if (university) {
+      conditions.push(eq(orders.studentUniversity, university.name));
+    }
   }
 
   if (filters.q?.trim()) {
@@ -364,6 +395,7 @@ export async function listOrders(filters: {
       createdAt: orders.createdAt,
       studentName: orders.studentName,
       studentPhone: orders.studentPhone,
+      studentUniversity: orders.studentUniversity,
     })
     .from(orders)
     .leftJoin(categories, eq(orders.categoryId, categories.id))
@@ -374,7 +406,18 @@ export async function listOrders(filters: {
 }
 
 export async function getOrderDetail(orderId: string) {
-  await requireStaffSession();
+  const session = await requireStaffSession();
+  const scope = await loadOrderScope(session.staffId);
+  if (!scope) return null;
+
+  const [visible] = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .leftJoin(categories, eq(orders.categoryId, categories.id))
+    .where(and(eq(orders.id, orderId), scope.condition))
+    .limit(1);
+
+  if (!visible) return null;
 
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, orderId),

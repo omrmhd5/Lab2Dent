@@ -4,9 +4,10 @@ import { CaretDown, CaretUp } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import type { OrderStatus } from "@/db/schema";
+import type { OrderStatus, StaffRole } from "@/db/schema";
 import { ModalOverlay } from "@/components/modal-overlay";
-import { ORDER_STATUSES, STATUS_LABELS } from "@/lib/status";
+import { OrderStatusPill } from "@/components/admin/status-pill";
+import { STATUS_LABELS, selectableStatusesForOrders } from "@/lib/status";
 import { formatEgp } from "@/lib/utils";
 import {
   ConfirmDeleteButton,
@@ -26,6 +27,7 @@ export type OrderRow = {
   createdAt: Date | string;
   studentName: string;
   studentPhone: string;
+  studentUniversity: string;
 };
 
 type SortKey = "orderNumber" | "priceEgp" | "costEgp" | "profit";
@@ -58,7 +60,7 @@ function SortableHeader({
   const Icon = sortDir === "asc" ? CaretUp : CaretDown;
 
   return (
-    <th className="w-0 px-2 py-3 font-medium whitespace-nowrap">
+    <th className="w-px px-2 py-3 font-medium whitespace-nowrap">
       <button
         type="button"
         className={`ui-press inline-flex items-center gap-0.5 whitespace-nowrap rounded-lg px-0.5 py-0.5 ${
@@ -143,10 +145,25 @@ function ConfirmDeleteDialog({
   );
 }
 
-export function OrdersTable({ orders }: { orders: OrderRow[] }) {
+export function OrdersTable({
+  orders,
+  role,
+  allowedStatuses,
+}: {
+  orders: OrderRow[];
+  role: StaffRole;
+  allowedStatuses: OrderStatus[];
+}) {
+  const showPrice = role !== "lab";
+  const showMoney = role === "admin";
+  const canDelete = role === "admin";
+  const columnCount =
+    7 + (showPrice ? 1 : 0) + (showMoney ? 2 : 0) + (canDelete ? 1 : 0);
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
-  const [status, setStatus] = useState<OrderStatus>("confirmed");
+  const [status, setStatus] = useState<OrderStatus>(
+    allowedStatuses[0] ?? "confirmed",
+  );
   const [pending, start] = useTransition();
   const [deletePending, startDelete] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -174,6 +191,20 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
 
   const allIds = useMemo(() => orders.map((order) => order.id), [orders]);
   const allSelected = allIds.length > 0 && selected.length === allIds.length;
+  const selectedOrders = useMemo(
+    () => orders.filter((order) => selected.includes(order.id)),
+    [orders, selected],
+  );
+  const bulkStatusOptions = useMemo(
+    () => selectableStatusesForOrders(allowedStatuses, selectedOrders),
+    [allowedStatuses, selectedOrders],
+  );
+
+  useEffect(() => {
+    if (bulkStatusOptions.length > 0 && !bulkStatusOptions.includes(status)) {
+      setStatus(bulkStatusOptions[0]);
+    }
+  }, [bulkStatusOptions, status]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -211,166 +242,24 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
 
   return (
     <div className="min-w-0">
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <table className="w-full table-auto text-left text-sm">
-          <thead className="border-b border-border text-muted">
-            <tr>
-              <th className="w-10 px-3 py-3">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={() => setSelected(allSelected ? [] : allIds)}
-                  aria-label="Select all orders"
-                />
-              </th>
-              <SortableHeader
-                label="No."
-                sortKey="orderNumber"
-                activeKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-              />
-              <th className="w-0 px-2 py-3 font-medium whitespace-nowrap">
-                Code
-              </th>
-              <th className="w-0 px-2 py-3 font-medium whitespace-nowrap">
-                Student
-              </th>
-              <th className="min-w-0 w-full px-2 py-3 font-medium">Work</th>
-              <SortableHeader
-                label="Price"
-                sortKey="priceEgp"
-                activeKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-              />
-              <SortableHeader
-                label="Cost"
-                sortKey="costEgp"
-                activeKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-              />
-              <SortableHeader
-                label="Profit"
-                sortKey="profit"
-                activeKey={sortKey}
-                sortDir={sortDir}
-                onSort={toggleSort}
-              />
-              <th className="w-0 px-2 py-3 font-medium whitespace-nowrap">
-                Status
-              </th>
-              <th className="w-0 px-2 py-3">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedOrders.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="px-4 py-10 text-muted">
-                  No orders yet.
-                </td>
-              </tr>
-            ) : (
-              sortedOrders.map((order) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-border last:border-0">
-                  <td className="px-3 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(order.id)}
-                      onChange={() => toggle(order.id)}
-                      aria-label={`Select ${order.code}`}
-                    />
-                  </td>
-                  <td className="w-0 px-2 py-3 font-mono text-xs whitespace-nowrap text-muted">
-                    #{order.orderNumber}
-                  </td>
-                  <td className="w-0 px-2 py-3 font-mono text-xs whitespace-nowrap">
-                    <Link
-                      href={`/admin/orders/${order.id}`}
-                      className="text-accent">
-                      {order.code}
-                    </Link>
-                  </td>
-                  <td className="w-0 max-w-[11rem] px-2 py-3">
-                    <div className="truncate" title={order.studentName}>
-                      {order.studentName}
-                    </div>
-                    <div
-                      className="truncate text-xs text-muted"
-                      title={order.studentPhone}>
-                      {order.studentPhone}
-                    </div>
-                  </td>
-                  <td className="min-w-0 w-full max-w-0 px-2 py-3">
-                    <div className="truncate" title={order.categoryName}>
-                      {order.categoryName}
-                    </div>
-                  </td>
-                  <td className="w-0 px-2 py-3 font-mono text-xs whitespace-nowrap">
-                    {formatEgp(order.priceEgp)}
-                  </td>
-                  <td className="w-0 px-2 py-3 font-mono text-xs whitespace-nowrap text-muted">
-                    {order.costEgp === null ? "—" : formatEgp(order.costEgp)}
-                  </td>
-                  <td className="w-0 px-2 py-3 font-mono text-xs whitespace-nowrap">
-                    {order.costEgp === null
-                      ? "—"
-                      : formatEgp(order.priceEgp - order.costEgp)}
-                  </td>
-                  <td className="w-0 px-2 py-3 whitespace-nowrap">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
-                        order.status === "rejected"
-                          ? "bg-danger/10 text-danger"
-                          : order.status === "delivered" ||
-                              order.status === "ready"
-                            ? "bg-accent-soft text-accent"
-                            : "bg-brand-soft text-brand"
-                      }`}>
-                      {STATUS_LABELS[order.status].en}
-                    </span>
-                  </td>
-                  <td className="w-0 px-2 py-3 whitespace-nowrap">
-                    <DeleteIconButton
-                      label={`Delete order ${order.code}`}
-                      onClick={() => {
-                        setDeleteError(null);
-                        setDeleteTarget({
-                          ids: [order.id],
-                          label: `order ${order.code}`,
-                        });
-                      }}
-                    />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
       {selected.length > 0 ? (
-        <div className="sticky bottom-4 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-[var(--shadow-md)]">
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-[var(--shadow-md)]">
           <p className="text-sm">{selected.length} selected</p>
           <SelectMenu
             className="w-72 shrink-0"
-            menuPlacement="up"
             ariaLabel="Bulk status"
-            value={status}
+            value={
+              bulkStatusOptions.includes(status) ? status : bulkStatusOptions[0]
+            }
             onChange={(next) => setStatus(next as OrderStatus)}
-            options={ORDER_STATUSES.map((value) => ({
+            options={bulkStatusOptions.map((value) => ({
               value,
               label: STATUS_LABELS[value].en,
             }))}
           />
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || bulkStatusOptions.length === 0}
             className="ui-press ui-btn ui-btn-primary"
             onClick={() => {
               start(async () => {
@@ -386,21 +275,174 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
             }}>
             Update status
           </button>
-          <DeleteIconButton
-            label={`Delete ${selected.length} selected order${selected.length === 1 ? "" : "s"}`}
-            variant="solid"
-            pending={deletePending}
-            onClick={() => {
-              setDeleteError(null);
-              setDeleteTarget({
-                ids: selected,
-                label: `${selected.length} order${selected.length === 1 ? "" : "s"}`,
-              });
-            }}
-          />
+          {canDelete ? (
+            <DeleteIconButton
+              label={`Delete ${selected.length} selected order${selected.length === 1 ? "" : "s"}`}
+              variant="solid"
+              pending={deletePending}
+              onClick={() => {
+                setDeleteError(null);
+                setDeleteTarget({
+                  ids: selected,
+                  label: `${selected.length} order${selected.length === 1 ? "" : "s"}`,
+                });
+              }}
+            />
+          ) : null}
           {error ? <p className="text-sm text-danger">{error}</p> : null}
         </div>
       ) : null}
+      <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+        <table className="w-full table-auto text-left text-sm">
+          <thead className="border-b border-border text-muted">
+            <tr>
+              <th className="w-px px-2 py-3">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={() => setSelected(allSelected ? [] : allIds)}
+                  aria-label="Select all orders"
+                />
+              </th>
+              <SortableHeader
+                label="No."
+                sortKey="orderNumber"
+                activeKey={sortKey}
+                sortDir={sortDir}
+                onSort={toggleSort}
+              />
+              <th className="w-px px-2 py-3 font-medium whitespace-nowrap">
+                Code
+              </th>
+              <th className="px-2 py-3 font-medium whitespace-nowrap">
+                Student
+              </th>
+              <th className="px-2 py-3 font-medium whitespace-nowrap">
+                University
+              </th>
+              <th className="px-2 py-3 font-medium whitespace-nowrap">Work</th>
+              {showPrice ? (
+                <SortableHeader
+                  label="Price"
+                  sortKey="priceEgp"
+                  activeKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+              ) : null}
+              {showMoney ? (
+                <SortableHeader
+                  label="Cost"
+                  sortKey="costEgp"
+                  activeKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+              ) : null}
+              {showMoney ? (
+                <SortableHeader
+                  label="Profit"
+                  sortKey="profit"
+                  activeKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                />
+              ) : null}
+              <th className="w-px px-2 py-3 font-medium whitespace-nowrap">
+                Status
+              </th>
+              {canDelete ? (
+                <th className="w-px px-2 py-3">
+                  <span className="sr-only">Actions</span>
+                </th>
+              ) : null}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedOrders.length === 0 ? (
+              <tr>
+                <td colSpan={columnCount} className="px-4 py-10 text-muted">
+                  No orders yet.
+                </td>
+              </tr>
+            ) : (
+              sortedOrders.map((order) => (
+                <tr
+                  key={order.id}
+                  className="border-b border-border last:border-0">
+                  <td className="w-px px-2 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(order.id)}
+                      onChange={() => toggle(order.id)}
+                      aria-label={`Select ${order.code}`}
+                    />
+                  </td>
+                  <td className="w-px px-2 py-3 font-mono text-xs whitespace-nowrap text-muted">
+                    #{order.orderNumber}
+                  </td>
+                  <td className="w-px px-2 py-3 font-mono text-xs whitespace-nowrap">
+                    <Link
+                      href={`/dashboard/orders/${order.id}`}
+                      className="text-accent">
+                      {order.code}
+                    </Link>
+                  </td>
+                  <td className="px-2 py-3 whitespace-nowrap">
+                    <div className="font-bold">{order.studentName}</div>
+                    <div className="text-xs text-muted">
+                      {order.studentPhone}
+                    </div>
+                  </td>
+                  <td className="px-2 py-3 whitespace-nowrap">
+                    {order.studentUniversity}
+                  </td>
+                  <td className="px-2 py-3 whitespace-nowrap">
+                    {order.categoryName}
+                  </td>
+                  {showPrice ? (
+                    <td className="w-px px-2 py-3 font-mono text-xs whitespace-nowrap">
+                      {formatEgp(order.priceEgp)}
+                    </td>
+                  ) : null}
+                  {showMoney ? (
+                    <td className="w-px px-2 py-3 font-mono text-xs whitespace-nowrap text-muted">
+                      {order.costEgp === null ? "—" : formatEgp(order.costEgp)}
+                    </td>
+                  ) : null}
+                  {showMoney ? (
+                    <td className="w-px px-2 py-3 font-mono text-xs whitespace-nowrap">
+                      {order.costEgp === null
+                        ? "—"
+                        : formatEgp(order.priceEgp - order.costEgp)}
+                    </td>
+                  ) : null}
+                  <td className="w-px px-2 py-3 whitespace-nowrap">
+                    <OrderStatusPill
+                      status={order.status}
+                      className="px-2.5 py-1"
+                    />
+                  </td>
+                  {canDelete ? (
+                    <td className="w-px px-2 py-3 whitespace-nowrap">
+                      <DeleteIconButton
+                        label={`Delete order ${order.code}`}
+                        onClick={() => {
+                          setDeleteError(null);
+                          setDeleteTarget({
+                            ids: [order.id],
+                            label: `order ${order.code}`,
+                          });
+                        }}
+                      />
+                    </td>
+                  ) : null}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {deleteTarget ? (
         <ConfirmDeleteDialog

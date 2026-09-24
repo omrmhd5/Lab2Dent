@@ -36,14 +36,19 @@ export default async function LoginPage({
             <BrandMark label={messages.brand} href="/" />
           </span>
           <div className="flex items-center gap-1">
-            <ThemeToggle toLight={messages.themeToLight} toDark={messages.themeToDark} />
+            <ThemeToggle
+              toLight={messages.themeToLight}
+              toDark={messages.themeToDark}
+            />
             <LanguageToggle locale={locale} />
           </div>
         </div>
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-12">
-          <h1 className="text-4xl font-bold tracking-tight">{messages.loginTitle}</h1>
+          <h1 className="text-4xl font-bold tracking-tight">
+            {messages.loginTitle}
+          </h1>
           <div className="ui-card mt-8">
-            <LoginForm messages={messages} from={from ?? "/admin"} />
+            <LoginForm messages={messages} from={from ?? "/dashboard"} />
           </div>
           <aside className="mt-6 rounded-2xl border border-dashed border-border bg-brand-soft/50 px-4 py-4">
             <p className="text-sm font-bold">{messages.demoTitle}</p>
@@ -62,6 +67,14 @@ export default async function LoginPage({
                   employee@employee.com
                   <span className="mx-2 text-muted">/</span>
                   employee123
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{messages.demoLab}</dt>
+                <dd className="mt-0.5 font-mono">
+                  lab@lab.com
+                  <span className="mx-2 text-muted">/</span>
+                  lab123
                 </dd>
               </div>
             </dl>

@@ -7,6 +7,7 @@ import { CategoryManager } from "@/components/admin/category-manager";
 import { categoryRecordToAnalytics } from "@/lib/category-analytics";
 import { db } from "@/db";
 import { categories, categoryFields } from "@/db/schema";
+import { requireAdminSession } from "@/lib/auth";
 import {
   isCategoryGroup,
   isSelectableCategory,
@@ -18,6 +19,7 @@ export default async function CategoryDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminSession();
   const { id } = await params;
 
   const [group] = await db
@@ -58,7 +60,7 @@ export default async function CategoryDetailPage({
     <div className="space-y-8">
       <div>
         <div className="flex items-center justify-between gap-4">
-          <Link href="/admin/categories" className="text-sm text-muted">
+          <Link href="/dashboard/categories" className="text-sm text-muted">
             Back to categories
           </Link>
           <CategoryGroupDeleteButton id={group.id} name={group.name} />

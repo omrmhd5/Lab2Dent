@@ -53,7 +53,7 @@ export async function loginStaff(
   await session.save();
 
   const from = String(formData.get("from") ?? "").trim();
-  redirect(from.startsWith("/admin") ? from : "/admin");
+  redirect(from.startsWith("/dashboard") ? from : "/dashboard");
 }
 
 export async function logoutStaff() {

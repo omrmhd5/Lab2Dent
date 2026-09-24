@@ -31,6 +31,12 @@ const demoStaff: {
     password: "employee123",
     role: "employee",
   },
+  {
+    name: "Lab",
+    email: "lab@lab.com",
+    password: "lab123",
+    role: "lab",
+  },
 ];
 
 async function seed() {
@@ -101,6 +107,19 @@ async function seed() {
         });
       }
     }
+
+    await client`
+      update orders set status = 'sent_to_lab' where status = 'in_lab'
+    `;
+    await client`
+      update orders set status = 'ready' where status = 'delivered'
+    `;
+    await client`
+      update order_events set status = 'sent_to_lab' where status = 'in_lab'
+    `;
+    await client`
+      update order_events set status = 'ready' where status = 'delivered'
+    `;
 
     console.log("Seed complete.");
   } finally {

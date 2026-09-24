@@ -43,7 +43,7 @@ export async function updateInstapaySettings(formData: FormData) {
     });
   }
 
-  revalidatePath("/admin/settings");
+  revalidatePath("/dashboard/settings");
   revalidatePath("/new-case");
   return { ok: true as const };
 }

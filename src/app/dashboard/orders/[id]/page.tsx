@@ -13,6 +13,9 @@ import {
 } from "@/components/admin/order-detail-sections";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
+import { requireStaffSession } from "@/lib/auth";
+import { statusesForRole } from "@/lib/status";
+import { formatDateTime } from "@/lib/utils";
 import { getOrderDetail } from "@/server/actions/orders";
 
 export default async function OrderDetailPage({
@@ -21,7 +24,10 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const session = await requireStaffSession();
   const order = await getOrderDetail(id);
+  const showPrice = session.role !== "lab";
+  const showMoney = session.role === "admin";
 
   if (!order) notFound();
 
@@ -39,20 +45,19 @@ export default async function OrderDetailPage({
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
   );
 
-  const submittedAt = order.createdAt.toLocaleString("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const submittedAt = formatDateTime(order.createdAt);
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-4">
-            <Link href="/admin" className="text-sm text-muted">
+            <Link href="/dashboard" className="text-sm text-muted">
               Back to orders
             </Link>
-            <OrderDeleteButton orderId={order.id} orderCode={order.code} />
+            {session.role === "admin" ? (
+              <OrderDeleteButton orderId={order.id} orderCode={order.code} />
+            ) : null}
           </div>
           <h1 className="mt-2 font-mono text-2xl tracking-tight md:text-3xl">
             <span className="text-muted">#{order.orderNumber}</span>{" "}
@@ -73,8 +78,14 @@ export default async function OrderDetailPage({
           categoryName={order.categoryName}
           priceEgp={order.priceEgp}
           costEgp={costEgp}
+          showPrice={showPrice}
+          showMoney={showMoney}
         />
-        <OrderStatusCard orderId={order.id} status={order.status} />
+        <OrderStatusCard
+          orderId={order.id}
+          status={order.status}
+          allowedStatuses={statusesForRole(session.role)}
+        />
       </div>
 
       <OrderCaseDetailsCard
@@ -95,7 +106,9 @@ export default async function OrderDetailPage({
       />
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <OrderPaymentCard orderId={order.id} />
+        {session.role === "lab" ? null : (
+          <OrderPaymentCard orderId={order.id} />
+        )}
         <OrderHistoryCard
           events={events.map((event) => ({
             id: event.id,
