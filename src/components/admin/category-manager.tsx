@@ -225,7 +225,7 @@ function SubcategoryCard({
   return (
     <section id={subcategory.id} className="ui-card space-y-5">
       {editing ? (
-        <div className="flex flex-nowrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <SubcategoryForm
             parentId={parentId}
             subcategory={subcategory}
@@ -240,30 +240,48 @@ function SubcategoryCard({
           </button>
         </div>
       ) : (
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="min-w-0 flex-1 font-bold">
-            {pickLocale(t.locale, subcategory.name, subcategory.nameAr)}
-          </p>
-          <p className="font-mono text-sm">
-            {subcategory.priceEgp === null
-              ? "—"
-              : formatEgp(subcategory.priceEgp)}
-          </p>
-          <p className="font-mono text-sm text-muted">
-            {subcategory.costEgp === null
-              ? t.costDash
-              : fill(t.costValue, { amount: formatEgp(subcategory.costEgp) })}
-          </p>
-          <p className="font-mono text-sm">
-            {subcategory.priceEgp === null || subcategory.costEgp === null
-              ? t.profitDash
-              : fill(t.profitValue, {
-                  amount: formatEgp(subcategory.priceEgp - subcategory.costEgp),
-                })}
-          </p>
-          <StatusPill active={subcategory.isActive} />
-          <EditIconButton label={t.edit} onClick={() => setEditing(true)} />
-          <DeleteIconButton label={t.delete} onClick={onRequestDelete} />
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <p className="min-w-0 font-bold">
+              {pickLocale(t.locale, subcategory.name, subcategory.nameAr)}
+            </p>
+            <div className="flex shrink-0 gap-1.5">
+              <EditIconButton label={t.edit} onClick={() => setEditing(true)} />
+              <DeleteIconButton label={t.delete} onClick={onRequestDelete} />
+            </div>
+          </div>
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <div className="min-w-0">
+              <dt className="text-xs text-muted">{t.price}</dt>
+              <dd className="mt-0.5 break-words font-mono font-bold">
+                {subcategory.priceEgp === null
+                  ? "—"
+                  : formatEgp(subcategory.priceEgp)}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="text-xs text-muted">{t.cost}</dt>
+              <dd className="mt-0.5 break-words font-mono">
+                {subcategory.costEgp === null
+                  ? "—"
+                  : formatEgp(subcategory.costEgp)}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="text-xs text-muted">{t.profit}</dt>
+              <dd className="mt-0.5 break-words font-mono font-bold">
+                {subcategory.priceEgp === null || subcategory.costEgp === null
+                  ? "—"
+                  : formatEgp(subcategory.priceEgp - subcategory.costEgp)}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="text-xs text-muted">{t.status}</dt>
+              <dd className="mt-1">
+                <StatusPill active={subcategory.isActive} />
+              </dd>
+            </div>
+          </dl>
         </div>
       )}
 

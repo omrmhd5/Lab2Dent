@@ -66,7 +66,7 @@ export default async function TrackCodePage({
           <p className="font-mono text-sm font-bold text-muted">
             #{order.orderNumber}
           </p>
-          <h1 className="font-mono text-4xl font-bold tracking-tight md:text-5xl">
+          <h1 className="break-all font-mono text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
             {order.code}
           </h1>
           {isNew ? (

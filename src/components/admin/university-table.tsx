@@ -129,7 +129,25 @@ export function UniversityTable({ initial }: { initial: University[] }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-border bg-surface">
+      <div className="space-y-3 md:hidden">
+        {rows.length === 0 ? (
+          <p className="rounded-2xl border border-border bg-surface px-4 py-10 text-sm text-muted">
+            No universities yet. Add one above.
+          </p>
+        ) : (
+          rows.map((row) => (
+            <UniversityCard
+              key={row.id}
+              university={row}
+              onRequestDelete={() => {
+                setDeleteError(null);
+                setDeleteId(row.id);
+              }}
+            />
+          ))
+        )}
+      </div>
+      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-surface md:block">
         <table className="w-full table-fixed text-left text-sm">
           <thead className="border-b border-border text-muted">
             <tr>
@@ -179,6 +197,52 @@ export function UniversityTable({ initial }: { initial: University[] }) {
   );
 }
 
+function UniversityCard({
+  university,
+  onRequestDelete,
+}: {
+  university: University;
+  onRequestDelete: () => void;
+}) {
+  const t = useDash();
+  const [editing, setEditing] = useState(false);
+  const name = pickLocale(t.locale, university.name, university.nameAr);
+
+  return (
+    <article className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+      {editing ? (
+        <div className="space-y-3">
+          <UniversityForm
+            university={university}
+            layout="row"
+            onSuccess={() => setEditing(false)}
+          />
+          <button
+            type="button"
+            className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
+            onClick={() => setEditing(false)}>
+            {t.cancel}
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-start justify-between gap-3">
+            <p className="min-w-0 font-bold">{name}</p>
+            <StatusPill active={university.isActive} />
+          </div>
+          <div className="flex justify-end gap-1.5">
+            <EditIconButton label={t.edit} onClick={() => setEditing(true)} />
+            <DeleteIconButton
+              label={fill(t.deleteName, { name: university.name })}
+              onClick={onRequestDelete}
+            />
+          </div>
+        </>
+      )}
+    </article>
+  );
+}
+
 function UniversityRow({
   university,
   onRequestDelete,
@@ -193,7 +257,7 @@ function UniversityRow({
     return (
       <tr className="border-b border-border last:border-0">
         <td colSpan={3} className="px-4 py-3">
-          <div className="flex flex-nowrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <UniversityForm
               university={university}
               layout="row"

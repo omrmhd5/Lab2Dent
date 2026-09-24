@@ -83,6 +83,7 @@ html {
 
 body {
   min-height: 100%;
+  overflow-x: clip;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-atkinson), system-ui, sans-serif;
@@ -289,7 +290,13 @@ html[dir="rtl"] body {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
-  padding: 1.5rem;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .ui-card {
+    padding: 1.5rem;
+  }
 }
 
 .ui-input {
@@ -322,6 +329,15 @@ html[dir="rtl"] body {
   width: 7rem;
   min-width: 7rem;
   flex: 0 0 7rem;
+}
+
+@media (max-width: 767px) {
+  .ui-input.ui-input-grow,
+  .ui-input.ui-input-price {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {

@@ -196,7 +196,7 @@ export function SubcategoryForm({
       <div className="min-w-0 flex-1 space-y-2">
         <form
           action={formAction}
-          className="flex w-full flex-nowrap items-center gap-2">
+          className="flex w-full flex-wrap items-center gap-2">
           <input type="hidden" name="parentId" value={parentId} />
           {subcategory ? (
             <input type="hidden" name="id" value={subcategory.id} />

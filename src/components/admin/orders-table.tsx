@@ -266,7 +266,7 @@ export function OrdersTable({
             {fill(t.selectedCount, { count: selected.length })}
           </p>
           <SelectMenu
-            className="w-72 shrink-0"
+            className="w-full sm:w-72"
             ariaLabel={t.bulkStatus}
             value={
               bulkStatusOptions.includes(status) ? status : bulkStatusOptions[0]
@@ -280,7 +280,7 @@ export function OrdersTable({
           <button
             type="button"
             disabled={pending || bulkStatusOptions.length === 0}
-            className="ui-press ui-btn ui-btn-primary"
+            className="ui-press ui-btn ui-btn-primary w-full sm:w-auto"
             onClick={() => {
               start(async () => {
                 const result = await bulkUpdateStatus(selected, status);
@@ -301,8 +301,7 @@ export function OrdersTable({
             <DeleteIconButton
               label={fill(t.deleteSelectedOrders, {
                 count: selected.length,
-                orders:
-                  selected.length === 1 ? t.orderSingular : t.orderPlural,
+                orders: selected.length === 1 ? t.orderSingular : t.orderPlural,
               })}
               variant="solid"
               pending={deletePending}
@@ -320,7 +319,113 @@ export function OrdersTable({
           {error ? <p className="text-sm text-danger">{error}</p> : null}
         </div>
       ) : null}
-      <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+      <div className="space-y-3 md:hidden">
+        {sortedOrders.length === 0 ? (
+          <p className="rounded-2xl border border-border bg-surface px-4 py-10 text-sm text-muted">
+            No orders yet.
+          </p>
+        ) : (
+          sortedOrders.map((order) => (
+            <article
+              key={order.id}
+              className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+              <div className="flex items-start justify-between gap-3">
+                <label className="flex min-w-0 items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={selected.includes(order.id)}
+                    onChange={() => toggle(order.id)}
+                    aria-label={`Select ${order.code}`}
+                  />
+                  <span className="min-w-0">
+                    <Link
+                      href={`/dashboard/orders/${order.id}`}
+                      className="block break-all font-mono text-sm font-bold text-accent">
+                      {order.code}
+                    </Link>
+                    <span className="text-xs text-muted">
+                      #{order.orderNumber}
+                    </span>
+                  </span>
+                </label>
+                {canDelete ? (
+                  <DeleteIconButton
+                    label={fill(t.deleteOrderLabel, { code: order.code })}
+                    onClick={() => {
+                      setDeleteError(null);
+                      setDeleteTarget({
+                        ids: [order.id],
+                        label: `order ${order.code}`,
+                      });
+                    }}
+                  />
+                ) : null}
+              </div>
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div className="min-w-0">
+                  <dt className="text-xs text-muted">{t.student}</dt>
+                  <dd className="mt-0.5 font-bold">{order.studentName}</dd>
+                  <dd className="text-xs text-muted">{order.studentPhone}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs text-muted">{t.university}</dt>
+                  <dd className="mt-0.5 break-words">
+                    {pickLocale(
+                      t.locale,
+                      order.studentUniversity,
+                      order.studentUniversityAr,
+                    )}
+                  </dd>
+                </div>
+                <div className="col-span-2 min-w-0">
+                  <dt className="text-xs text-muted">{t.work}</dt>
+                  <dd className="mt-0.5 break-words">
+                    {pickLocale(
+                      t.locale,
+                      order.categoryName,
+                      order.categoryNameAr,
+                    )}
+                  </dd>
+                </div>
+                {showPrice ? (
+                  <div className="min-w-0">
+                    <dt className="text-xs text-muted">{t.price}</dt>
+                    <dd className="mt-0.5 break-words font-mono text-sm font-bold">
+                      {formatEgp(order.priceEgp)}
+                    </dd>
+                  </div>
+                ) : null}
+                {showMoney ? (
+                  <div className="min-w-0">
+                    <dt className="text-xs text-muted">{t.cost}</dt>
+                    <dd className="mt-0.5 break-words font-mono text-sm">
+                      {order.costEgp === null ? "—" : formatEgp(order.costEgp)}
+                    </dd>
+                  </div>
+                ) : null}
+                {showMoney ? (
+                  <div className="min-w-0">
+                    <dt className="text-xs text-muted">{t.profit}</dt>
+                    <dd className="mt-0.5 break-words font-mono text-sm font-bold">
+                      {order.costEgp === null
+                        ? "—"
+                        : formatEgp(order.priceEgp - order.costEgp)}
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+              <OrderStatusPill
+                status={order.status}
+                labName={order.assignedLabName}
+                locale={t.locale}
+                className="px-2.5 py-1"
+              />
+            </article>
+          ))
+        )}
+      </div>
+      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-surface md:block">
         <table className="w-full table-auto text-left text-sm">
           <thead className="border-b border-border text-muted">
             <tr>
@@ -348,7 +453,9 @@ export function OrdersTable({
               <th className="px-2 py-3 font-medium whitespace-nowrap">
                 {t.university}
               </th>
-              <th className="px-2 py-3 font-medium whitespace-nowrap">{t.work}</th>
+              <th className="px-2 py-3 font-medium whitespace-nowrap">
+                {t.work}
+              </th>
               {showPrice ? (
                 <SortableHeader
                   label={t.price}
@@ -430,7 +537,11 @@ export function OrdersTable({
                     )}
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap">
-                    {pickLocale(t.locale, order.categoryName, order.categoryNameAr)}
+                    {pickLocale(
+                      t.locale,
+                      order.categoryName,
+                      order.categoryNameAr,
+                    )}
                   </td>
                   {showPrice ? (
                     <td className="w-px px-2 py-3 font-mono text-xs whitespace-nowrap">

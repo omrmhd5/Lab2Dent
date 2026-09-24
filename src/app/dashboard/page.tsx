@@ -43,9 +43,9 @@ export default async function AdminOrdersPage({
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight">{t.orders}</h1>
-      <form className="ui-card mt-6 flex flex-wrap gap-3">
+      <form className="ui-card mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <input
-          className="ui-input max-w-xs"
+          className="ui-input w-full sm:max-w-xs"
           name="q"
           defaultValue={q ?? ""}
           placeholder={t.searchOrders}
@@ -53,7 +53,7 @@ export default async function AdminOrdersPage({
         {isLab ? null : (
           <SelectMenu
             name="university"
-            className="w-72 shrink-0"
+            className="w-full sm:w-72"
             defaultValue={selectedUniversity}
             ariaLabel={t.filterUniversity}
             options={[
@@ -67,7 +67,7 @@ export default async function AdminOrdersPage({
         )}
         <SelectMenu
           name="status"
-          className="w-72 shrink-0"
+          className="w-full sm:w-72"
           defaultValue={selectedStatus}
           ariaLabel={t.filterStatus}
           options={[

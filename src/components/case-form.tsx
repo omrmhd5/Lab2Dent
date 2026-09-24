@@ -301,8 +301,10 @@ export function CaseForm({
                   )
                   .map((field) => (
                     <div key={field.id} className="flex justify-between gap-4">
-                      <dt className="text-muted">{field.label}</dt>
-                      <dd className="font-bold">{textValues[field.id]}</dd>
+                      <dt className="min-w-0 text-muted">{field.label}</dt>
+                      <dd className="min-w-0 break-words text-end font-bold">
+                        {textValues[field.id]}
+                      </dd>
                     </div>
                   ))}
               </dl>

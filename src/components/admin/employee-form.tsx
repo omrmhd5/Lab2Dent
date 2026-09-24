@@ -66,46 +66,45 @@ export function EmployeeForm({
     { value: "", label: t.anyUniversity },
     ...universities,
   ];
-  const categoryOptions = [
-    { value: "", label: t.anyCategory },
-    ...categories,
-  ];
+  const categoryOptions = [{ value: "", label: t.anyCategory }, ...categories];
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3">
+    <form
+      action={formAction}
+      className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
       {employee ? <input type="hidden" name="id" value={employee.id} /> : null}
-      <label className="space-y-1">
+      <label className="w-full space-y-1 sm:w-auto">
         <span className="block text-xs text-muted">{t.name}</span>
         <input
-          className="ui-input min-w-40"
+          className="ui-input sm:min-w-40"
           name="name"
           defaultValue={employee?.name ?? ""}
           required
         />
       </label>
-      <label className="space-y-1">
+      <label className="w-full space-y-1 sm:w-auto">
         <span className="block text-xs text-muted">{t.email}</span>
         <input
-          className="ui-input min-w-52"
+          className="ui-input sm:min-w-52"
           name="email"
           type="email"
           defaultValue={employee?.email ?? ""}
           required
         />
       </label>
-      <label className="space-y-1">
+      <label className="w-full space-y-1 sm:w-auto">
         <span className="block text-xs text-muted">
           {employee ? t.newPassword : t.password}
         </span>
         <input
-          className="ui-input min-w-40"
+          className="ui-input sm:min-w-40"
           name="password"
           type="password"
           minLength={employee ? undefined : 8}
           required={!employee}
         />
       </label>
-      <label className="space-y-1">
+      <label className="w-full space-y-1 sm:w-auto">
         <span className="block text-xs text-muted">{t.role}</span>
         <SelectMenu
           name="role"
@@ -119,11 +118,11 @@ export function EmployeeForm({
         />
       </label>
       {role === "employee" ? (
-        <label className="space-y-1">
+        <label className="w-full space-y-1 sm:w-auto">
           <span className="block text-xs text-muted">{t.university}</span>
           <SelectMenu
             name="universityId"
-            className="w-56"
+            className="w-full sm:w-56"
             defaultValue={employee?.universityId ?? ""}
             options={universityOptions}
           />
@@ -132,11 +131,11 @@ export function EmployeeForm({
         <input type="hidden" name="universityId" value="" />
       )}
       {role === "employee" ? (
-        <label className="space-y-1">
+        <label className="w-full space-y-1 sm:w-auto">
           <span className="block text-xs text-muted">{t.category}</span>
           <SelectMenu
             name="categoryId"
-            className="w-56"
+            className="w-full sm:w-56"
             defaultValue={employee?.categoryId ?? ""}
             options={categoryOptions}
           />

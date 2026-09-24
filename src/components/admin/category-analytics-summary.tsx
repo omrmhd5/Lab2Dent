@@ -28,11 +28,11 @@ export function CategoryAnalyticsSummary({
   return (
     <div className="ui-card h-full">
       <h2 className="text-sm font-bold">{title}</h2>
-      <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+      <dl className="mt-4 grid grid-cols-2 gap-3">
         {items.map((item) => (
-          <div key={item.label}>
-            <dt className="text-sm text-muted">{item.label}</dt>
-            <dd className="mt-1 font-mono text-2xl font-bold tracking-tight">
+          <div key={item.label} className="min-w-0">
+            <dt className="text-xs text-muted sm:text-sm">{item.label}</dt>
+            <dd className="mt-1 break-words font-mono text-base font-bold leading-tight sm:text-2xl">
               {item.value}
             </dd>
           </div>

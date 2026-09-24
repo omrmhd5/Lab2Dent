@@ -71,7 +71,7 @@ export default async function LoginPage({
             <dl className="mt-3 space-y-3 text-sm">
               <div>
                 <dt className="text-muted">{messages.demoAdmin}</dt>
-                <dd className="mt-0.5 font-mono">
+                <dd className="mt-0.5 break-all font-mono">
                   admin@admin.com
                   <span className="mx-2 text-muted">/</span>
                   admin123
@@ -79,7 +79,7 @@ export default async function LoginPage({
               </div>
               <div>
                 <dt className="text-muted">{messages.demoEmployee}</dt>
-                <dd className="mt-0.5 font-mono">
+                <dd className="mt-0.5 break-all font-mono">
                   employee@employee.com
                   <span className="mx-2 text-muted">/</span>
                   employee123
@@ -87,7 +87,7 @@ export default async function LoginPage({
               </div>
               <div>
                 <dt className="text-muted">{messages.demoLab}</dt>
-                <dd className="mt-0.5 font-mono">
+                <dd className="mt-0.5 break-all font-mono">
                   lab@lab.com
                   <span className="mx-2 text-muted">/</span>
                   lab123

@@ -40,12 +40,14 @@ export default async function HomePage() {
     <div className="flex min-h-dvh flex-col">
       <SiteHeader locale={locale} messages={messages} />
       <main id="main">
-        <section className="flex min-h-[calc(100dvh-4.5rem)] items-center justify-center px-4 py-16 sm:px-6">
+        <section className="flex min-h-[calc(100svh-10rem)] items-center justify-center px-4 py-12 sm:px-6 md:min-h-[calc(100svh-4.5rem)] md:py-16">
           <div className="flex w-full max-w-md flex-col items-center">
             <Rise spring>
               <BrandLockup label={messages.brand} slogan={messages.slogan} />
             </Rise>
-            <Rise delay={0.08} className="mt-10 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+            <Rise
+              delay={0.08}
+              className="mt-10 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
               <Link
                 href="/new-case"
                 className="ui-press ui-btn ui-btn-primary w-full">

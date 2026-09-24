@@ -17,22 +17,35 @@ export function SiteHeader({
         {messages.skipToContent}
       </a>
       <header className="sticky top-0 z-20 border-b border-border/80 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-[72px] w-full max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-6">
-          <BrandMark label={messages.brand} />
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 px-4 py-3 sm:px-6 md:h-[72px] md:flex-row md:items-center md:justify-between md:py-0">
+          <div className="flex items-center justify-between gap-2">
+            <BrandMark label={messages.brand} />
+            <div className="flex items-center gap-1 md:hidden">
+              <ThemeToggle
+                toLight={messages.themeToLight}
+                toDark={messages.themeToDark}
+              />
+              <LanguageToggle locale={locale} />
+            </div>
+          </div>
           <nav className="flex items-center gap-1.5">
             <Link
               href="/track"
-              className="ui-press inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold text-muted">
+              className="ui-press inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-3 text-sm font-bold text-muted md:flex-none">
               {messages.navTrack}
             </Link>
-            <Link href="/new-case" className="ui-press ui-btn ui-btn-primary">
+            <Link
+              href="/new-case"
+              className="ui-press ui-btn ui-btn-primary flex-1 justify-center md:flex-none">
               {messages.navRegister}
             </Link>
-            <ThemeToggle
-              toLight={messages.themeToLight}
-              toDark={messages.themeToDark}
-            />
-            <LanguageToggle locale={locale} />
+            <div className="hidden items-center gap-1 md:flex">
+              <ThemeToggle
+                toLight={messages.themeToLight}
+                toDark={messages.themeToDark}
+              />
+              <LanguageToggle locale={locale} />
+            </div>
           </nav>
         </div>
       </header>

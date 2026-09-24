@@ -61,74 +61,136 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
   }, [rows]);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-      <table className="w-full min-w-[960px] text-left text-sm">
-        <thead className="border-b border-border text-muted">
-          <tr>
-            <th className="px-4 py-3 font-medium">{t.category}</th>
-            <th className="px-4 py-3 font-medium">{t.subcategories}</th>
-            <th className="px-4 py-3 font-medium">{t.ordersColumn}</th>
-            <th className="px-4 py-3 font-medium">{t.totalPrices}</th>
-            <th className="px-4 py-3 font-medium">{t.totalCosts}</th>
-            <th className="px-4 py-3 font-medium">{t.totalProfit}</th>
-            <th className="px-4 py-3 font-medium">{t.status}</th>
-            <th className="px-4 py-3 font-medium">
-              <span className="sr-only">{t.actions}</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {groups.length === 0 ? (
+    <>
+      <div className="space-y-3 md:hidden">
+        {groups.length === 0 ? (
+          <p className="rounded-2xl border border-border bg-surface px-4 py-10 text-sm text-muted">
+            {t.noCategoriesYet}
+          </p>
+        ) : (
+          groups.map((group) => {
+            const count = childrenByParent.get(group.id)?.length ?? 0;
+            const name = pickLocale(t.locale, group.name, group.nameAr);
+            return (
+              <article
+                key={group.id}
+                className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 font-bold">{name}</p>
+                  <StatusPill active={group.isActive} />
+                </div>
+                <dl className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="min-w-0">
+                    <dt className="text-xs text-muted">{t.subcategories}</dt>
+                    <dd className="mt-0.5 font-bold">{count}</dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-xs text-muted">{t.ordersColumn}</dt>
+                    <dd className="mt-0.5 font-mono font-bold">
+                      {group.confirmedOrderCount}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-xs text-muted">{t.totalPrices}</dt>
+                    <dd className="mt-0.5 break-words font-mono text-sm font-bold">
+                      {formatEgp(group.confirmedTotalPriceEgp)}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-xs text-muted">{t.totalCosts}</dt>
+                    <dd className="mt-0.5 break-words font-mono text-sm font-bold">
+                      {formatEgp(group.confirmedTotalCostEgp)}
+                    </dd>
+                  </div>
+                  <div className="col-span-2 min-w-0">
+                    <dt className="text-xs text-muted">{t.totalProfit}</dt>
+                    <dd className="mt-0.5 break-words font-mono text-sm font-bold">
+                      {formatEgp(group.confirmedTotalProfitEgp)}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="flex items-center justify-end gap-1.5">
+                  <Link
+                    href={`/dashboard/categories/${group.id}`}
+                    className="ui-press ui-btn ui-btn-secondary ui-btn-sm">
+                    {t.view}
+                  </Link>
+                  <CategoryGroupDeleteButton id={group.id} name={group.name} />
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-surface md:block">
+        <table className="w-full min-w-[960px] text-left text-sm">
+          <thead className="border-b border-border text-muted">
             <tr>
-              <td colSpan={8} className="px-4 py-10 text-muted">
-                {t.noCategoriesYet}
-              </td>
+              <th className="px-4 py-3 font-medium">{t.category}</th>
+              <th className="px-4 py-3 font-medium">{t.subcategories}</th>
+              <th className="px-4 py-3 font-medium">{t.ordersColumn}</th>
+              <th className="px-4 py-3 font-medium">{t.totalPrices}</th>
+              <th className="px-4 py-3 font-medium">{t.totalCosts}</th>
+              <th className="px-4 py-3 font-medium">{t.totalProfit}</th>
+              <th className="px-4 py-3 font-medium">{t.status}</th>
+              <th className="px-4 py-3 font-medium">
+                <span className="sr-only">{t.actions}</span>
+              </th>
             </tr>
-          ) : (
-            groups.map((group) => {
-              const count = childrenByParent.get(group.id)?.length ?? 0;
-              return (
-                <tr
-                  key={group.id}
-                  className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-bold">
-                    {pickLocale(t.locale, group.name, group.nameAr)}
-                  </td>
-                  <td className="px-4 py-3">{count}</td>
-                  <td className="px-4 py-3 font-mono">
-                    {group.confirmedOrderCount}
-                  </td>
-                  <td className="px-4 py-3 font-mono">
-                    {formatEgp(group.confirmedTotalPriceEgp)}
-                  </td>
-                  <td className="px-4 py-3 font-mono">
-                    {formatEgp(group.confirmedTotalCostEgp)}
-                  </td>
-                  <td className="px-4 py-3 font-mono">
-                    {formatEgp(group.confirmedTotalProfitEgp)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusPill active={group.isActive} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1.5">
-                      <Link
-                        href={`/dashboard/categories/${group.id}`}
-                        className="ui-press ui-btn ui-btn-secondary ui-btn-sm">
-                        {t.view}
-                      </Link>
-                      <CategoryGroupDeleteButton
-                        id={group.id}
-                        name={group.name}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {groups.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-10 text-muted">
+                  {t.noCategoriesYet}
+                </td>
+              </tr>
+            ) : (
+              groups.map((group) => {
+                const count = childrenByParent.get(group.id)?.length ?? 0;
+                return (
+                  <tr
+                    key={group.id}
+                    className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 font-bold">
+                      {pickLocale(t.locale, group.name, group.nameAr)}
+                    </td>
+                    <td className="px-4 py-3">{count}</td>
+                    <td className="px-4 py-3 font-mono">
+                      {group.confirmedOrderCount}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {formatEgp(group.confirmedTotalPriceEgp)}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {formatEgp(group.confirmedTotalCostEgp)}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {formatEgp(group.confirmedTotalProfitEgp)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusPill active={group.isActive} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        <Link
+                          href={`/dashboard/categories/${group.id}`}
+                          className="ui-press ui-btn ui-btn-secondary ui-btn-sm">
+                          {t.view}
+                        </Link>
+                        <CategoryGroupDeleteButton
+                          id={group.id}
+                          name={group.name}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

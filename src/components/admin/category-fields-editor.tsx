@@ -165,10 +165,10 @@ function FieldEditor({
   return (
     <div className="rounded-2xl border border-border p-3">
       {editing ? (
-        <div className="flex flex-nowrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <form
             action={action}
-            className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <input type="hidden" name="id" value={field.id} />
             <input type="hidden" name="categoryId" value={categoryId} />
             <input

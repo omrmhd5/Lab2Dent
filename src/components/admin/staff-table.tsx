@@ -151,8 +151,35 @@ export function StaffTable({
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <table className="w-full table-auto text-left text-sm">
+      <div className="space-y-3 md:hidden">
+        {rows.length === 0 ? (
+          <p className="rounded-2xl border border-border bg-surface px-4 py-10 text-sm text-muted">
+            {t.noStaffYet}
+          </p>
+        ) : (
+          rows.map((row) => (
+            <StaffMobileCard
+              key={row.id}
+              row={row}
+              universities={universities}
+              categories={categories}
+              soleAdmin={
+                row.role === "admin" &&
+                row.isActive &&
+                rows.filter((item) => item.role === "admin" && item.isActive)
+                  .length <= 1
+              }
+              canDelete={row.id !== currentStaffId}
+              onRequestDelete={() => {
+                setDeleteError(null);
+                setDeleteId(row.id);
+              }}
+            />
+          ))
+        )}
+      </div>
+      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-surface md:block">
+        <table className="w-full min-w-[720px] table-auto text-left text-sm">
           <thead className="border-b border-border text-muted">
             <tr>
               <th className="px-4 py-3 font-medium">{t.name}</th>
@@ -213,6 +240,96 @@ export function StaffTable({
         />
       ) : null}
     </>
+  );
+}
+
+function StaffMobileCard({
+  row,
+  universities,
+  categories,
+  canDelete,
+  soleAdmin,
+  onRequestDelete,
+}: {
+  row: StaffRow & {
+    universityName: string | null;
+    universityNameAr: string | null;
+    categoryName: string | null;
+    categoryNameAr: string | null;
+  };
+  universities: Option[];
+  categories: Option[];
+  canDelete: boolean;
+  soleAdmin: boolean;
+  onRequestDelete: () => void;
+}) {
+  const t = useDash();
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <article className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+        <EmployeeForm
+          employee={row}
+          universities={universities}
+          categories={categories}
+          soleAdmin={soleAdmin}
+          onSuccess={() => setEditing(false)}
+        />
+        <button
+          type="button"
+          className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
+          onClick={() => setEditing(false)}>
+          {t.cancel}
+        </button>
+      </article>
+    );
+  }
+
+  const facts = [
+    { label: t.email, value: row.email },
+    { label: t.role, value: roleLabel(row.role, t) },
+    {
+      label: t.university,
+      value: row.universityName
+        ? pickLocale(t.locale, row.universityName, row.universityNameAr)
+        : "—",
+    },
+    {
+      label: t.category,
+      value: row.categoryName
+        ? pickLocale(t.locale, row.categoryName, row.categoryNameAr)
+        : "—",
+    },
+  ];
+
+  return (
+    <article className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 font-bold">{row.name}</p>
+        <StatusPill active={row.isActive} />
+      </div>
+      <dl className="grid gap-2 text-sm">
+        {facts.map((fact) => (
+          <div key={fact.label} className="min-w-0">
+            <dt className="text-xs text-muted">{fact.label}</dt>
+            <dd className="mt-0.5 break-all">{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="flex justify-end gap-2">
+        <EditIconButton
+          label={fill(t.editName, { name: row.name })}
+          onClick={() => setEditing(true)}
+        />
+        {canDelete ? (
+          <DeleteIconButton
+            label={fill(t.deleteName, { name: row.name })}
+            onClick={onRequestDelete}
+          />
+        ) : null}
+      </div>
+    </article>
   );
 }
 

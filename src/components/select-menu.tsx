@@ -127,7 +127,7 @@ export function SelectMenu({
       {name ? <input type="hidden" name={name} value={selected} /> : null}
       <button
         type="button"
-        className="ui-press ui-input flex w-full cursor-pointer items-center justify-between gap-3 text-start whitespace-nowrap"
+        className="ui-press ui-input flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 text-start"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listboxId}
@@ -143,7 +143,8 @@ export function SelectMenu({
           setOpen((current) => !current);
         }}
         onKeyDown={onTriggerKeyDown}>
-        <span className={selectedOption ? "font-bold" : "text-muted"}>
+        <span
+          className={`min-w-0 flex-1 truncate ${selectedOption ? "font-bold" : "text-muted"}`}>
           {selectedOption?.label ?? placeholder}
         </span>
         <CaretDown
@@ -165,7 +166,7 @@ export function SelectMenu({
             options[activeIndex] ? `${optionId}-${activeIndex}` : undefined
           }
           onKeyDown={onListKeyDown}
-          className={`menu-pop absolute start-0 z-50 max-h-[min(20rem,70vh)] w-max min-w-full overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-surface p-1 shadow-[var(--shadow-lg)] outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+          className={`menu-pop absolute start-0 z-50 max-h-[min(20rem,70vh)] w-full min-w-full max-w-[calc(100vw-2rem)] overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-surface p-1 shadow-[var(--shadow-lg)] outline-none focus-visible:ring-2 focus-visible:ring-brand ${
             menuPlacement === "up"
               ? "bottom-[calc(100%+0.5rem)]"
               : "top-[calc(100%+0.5rem)]"
@@ -182,7 +183,7 @@ export function SelectMenu({
                   id={`${optionId}-${index}`}
                   role="option"
                   aria-selected={isSelected}
-                  className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 text-start text-sm font-bold whitespace-nowrap ${
+                  className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 text-start text-sm font-bold ${
                     isActive ? "bg-brand-soft text-brand" : ""
                   } ${isSelected && !isActive ? "text-brand" : ""}`}
                   onMouseEnter={() => setActiveIndex(index)}
