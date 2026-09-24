@@ -9,7 +9,9 @@ import {
   type CategoryFieldType,
 } from "@/db/schema";
 import { isSelectableCategory, type CategoryRecord } from "@/lib/categories";
+import { readLocalizedPair } from "@/lib/bilingual";
 import { requireAdminSession } from "@/lib/auth";
+import { getLocale } from "@/lib/locale";
 
 function revalidateFields() {
   revalidatePath("/dashboard/categories", "layout");
@@ -29,6 +31,13 @@ async function requireSubcategory(categoryId: string) {
   }
 
   return row;
+}
+
+async function labelsRequired() {
+  const locale = await getLocale();
+  return locale === "ar"
+    ? "التسمية بالإنجليزية والعربية مطلوبة."
+    : "English and Arabic labels are required.";
 }
 
 function parseType(value: FormDataEntryValue | null): CategoryFieldType | null {
@@ -62,12 +71,16 @@ export async function createCategoryField(formData: FormData) {
   await requireAdminSession();
 
   const categoryId = String(formData.get("categoryId") ?? "").trim();
-  const label = String(formData.get("label") ?? "").trim();
+  const { english: label, arabic: labelAr } = readLocalizedPair(
+    formData,
+    "label",
+    "labelAr",
+  );
   const type = parseType(formData.get("type"));
   const required = String(formData.get("required") ?? "") === "on";
 
-  if (!categoryId || !label || !type) {
-    return { error: "Label and type are required." };
+  if (!categoryId || !label || !labelAr || !type) {
+    return { error: await labelsRequired() };
   }
 
   const subcategory = await requireSubcategory(categoryId);
@@ -76,6 +89,7 @@ export async function createCategoryField(formData: FormData) {
   await db.insert(categoryFields).values({
     categoryId,
     label,
+    labelAr,
     type,
     required,
     sortOrder: await nextSortOrder(categoryId),
@@ -90,12 +104,16 @@ export async function updateCategoryField(formData: FormData) {
 
   const id = String(formData.get("id") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "").trim();
-  const label = String(formData.get("label") ?? "").trim();
+  const { english: label, arabic: labelAr } = readLocalizedPair(
+    formData,
+    "label",
+    "labelAr",
+  );
   const type = parseType(formData.get("type"));
   const required = String(formData.get("required") ?? "") === "on";
 
-  if (!id || !categoryId || !label || !type) {
-    return { error: "Label and type are required." };
+  if (!id || !categoryId || !label || !labelAr || !type) {
+    return { error: await labelsRequired() };
   }
 
   const subcategory = await requireSubcategory(categoryId);
@@ -103,7 +121,7 @@ export async function updateCategoryField(formData: FormData) {
 
   await db
     .update(categoryFields)
-    .set({ label, type, required, updatedAt: new Date() })
+    .set({ label, labelAr, type, required, updatedAt: new Date() })
     .where(eq(categoryFields.id, id));
 
   revalidateFields();

@@ -59,6 +59,7 @@ export const categories = pgTable(
       onDelete: "cascade",
     }),
     name: text("name").notNull(),
+    nameAr: text("name_ar"),
     priceEgp: integer("price_egp"),
     costEgp: integer("cost_egp"),
     confirmedOrderCount: integer("confirmed_order_count").notNull().default(0),
@@ -86,6 +87,7 @@ export const categories = pgTable(
 export const universities = pgTable("universities", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  nameAr: text("name_ar"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -109,6 +111,8 @@ export const orders = pgTable(
       onDelete: "set null",
     }),
     categoryName: text("category_name").notNull(),
+    categoryNameAr: text("category_name_ar"),
+    studentUniversityAr: text("student_university_ar"),
     priceEgp: integer("price_egp").notNull(),
     statsCostEgp: integer("stats_cost_egp"),
     statsProfitEgp: integer("stats_profit_egp"),
@@ -148,6 +152,7 @@ export const categoryFields = pgTable(
       .notNull()
       .references(() => categories.id, { onDelete: "cascade" }),
     label: text("label").notNull(),
+    labelAr: text("label_ar"),
     type: categoryFieldTypeEnum("type").notNull(),
     required: boolean("required").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
@@ -172,6 +177,7 @@ export const orderFieldValues = pgTable(
       onDelete: "set null",
     }),
     label: text("label").notNull(),
+    labelAr: text("label_ar"),
     type: categoryFieldTypeEnum("type").notNull(),
     textValue: text("text_value"),
     imageKey: text("image_key"),

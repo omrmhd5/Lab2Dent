@@ -23,7 +23,7 @@ import {
   savePaymentScreenshot,
 } from "@/lib/storage";
 import {
-  formatCategoryLabel,
+  formatCategoryNames,
   isSelectableCategory,
   type CategoryRecord,
 } from "@/lib/categories";
@@ -31,6 +31,8 @@ import {
   applyOrderStatusStatsTransition,
   removeOrdersFromCategoryStats,
 } from "@/lib/category-stats";
+import { pickLocale } from "@/lib/bilingual";
+import { getLocale } from "@/lib/locale";
 import { statusesForRole } from "@/lib/status";
 import { isEgyptianMobile, normalizePhone } from "@/lib/utils";
 
@@ -81,7 +83,11 @@ export async function createCase(
     parent = parentRow ? (parentRow as CategoryRecord) : null;
   }
 
-  const categoryName = formatCategoryLabel(category as CategoryRecord, parent);
+  const categoryNames = formatCategoryNames(
+    category as CategoryRecord,
+    parent,
+  );
+  const locale = await getLocale();
 
   const [university] = await db
     .select()
@@ -104,6 +110,7 @@ export async function createCase(
   const answers: {
     fieldId: string;
     label: string;
+    labelAr: string | null;
     type: "text" | "image";
     textValue: string | null;
     imageKey: string | null;
@@ -114,12 +121,18 @@ export async function createCase(
     if (field.type === "text") {
       const textValue = String(formData.get(`field_${field.id}`) ?? "").trim();
       if (field.required && !textValue) {
-        return { error: `Fill in ${field.label}.` };
+        return {
+          error:
+            locale === "ar"
+              ? `املأ ${pickLocale(locale, field.label, field.labelAr)}.`
+              : `Fill in ${field.label}.`,
+        };
       }
       if (!textValue) continue;
       answers.push({
         fieldId: field.id,
         label: field.label,
+        labelAr: field.labelAr,
         type: "text",
         textValue,
         imageKey: null,
@@ -131,7 +144,12 @@ export async function createCase(
     const file = formData.get(`field_${field.id}`);
     const hasFile = file instanceof File && file.size > 0;
     if (field.required && !hasFile) {
-      return { error: `Upload ${field.label}.` };
+      return {
+        error:
+          locale === "ar"
+            ? `ارفع ${pickLocale(locale, field.label, field.labelAr)}.`
+            : `Upload ${field.label}.`,
+      };
     }
     if (!hasFile || !(file instanceof File)) continue;
 
@@ -140,6 +158,7 @@ export async function createCase(
       answers.push({
         fieldId: field.id,
         label: field.label,
+        labelAr: field.labelAr,
         type: "image",
         textValue: null,
         imageKey,
@@ -190,8 +209,10 @@ export async function createCase(
           studentName: name,
           studentPhone: phone,
           studentUniversity: university.name,
+          studentUniversityAr: university.nameAr,
           categoryId: category.id,
-          categoryName,
+          categoryName: categoryNames.english,
+          categoryNameAr: categoryNames.arabic,
           priceEgp: category.priceEgp!,
           status: "pending",
           paymentScreenshotKey,
@@ -204,6 +225,7 @@ export async function createCase(
             orderId: order.id,
             fieldId: answer.fieldId,
             label: answer.label,
+            labelAr: answer.labelAr,
             type: answer.type,
             textValue: answer.textValue,
             imageKey: answer.imageKey,
@@ -470,6 +492,8 @@ export async function listOrders(filters: {
       ilike(orders.studentName, q),
       ilike(orders.studentPhone, q),
       ilike(orders.studentUniversity, q),
+      ilike(orders.studentUniversityAr, q),
+      ilike(orders.categoryNameAr, q),
     ];
     const asNumber = Number(trimmed.replace(/^#/, ""));
     if (Number.isInteger(asNumber) && asNumber > 0) {
@@ -485,6 +509,8 @@ export async function listOrders(filters: {
       orderNumber: orders.orderNumber,
       code: orders.code,
       categoryName: orders.categoryName,
+      categoryNameAr: orders.categoryNameAr,
+      studentUniversityAr: orders.studentUniversityAr,
       priceEgp: orders.priceEgp,
       costEgp: categories.costEgp,
       status: orders.status,
@@ -537,6 +563,37 @@ export async function getOrderDetail(orderId: string) {
   return order ?? null;
 }
 
+async function resolveCategoryContext(categoryId: string | null) {
+  if (!categoryId) {
+    return { categoryRecord: null, parentRecord: null };
+  }
+
+  const [category] = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.id, categoryId))
+    .limit(1);
+
+  if (!category) {
+    return { categoryRecord: null, parentRecord: null };
+  }
+
+  let parentRecord: CategoryRecord | null = null;
+  if (category.parentId) {
+    const [parent] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, category.parentId))
+      .limit(1);
+    parentRecord = parent ? (parent as CategoryRecord) : null;
+  }
+
+  return {
+    categoryRecord: category as CategoryRecord,
+    parentRecord,
+  };
+}
+
 export async function findPublicOrder(code: string) {
   const normalized = code.trim().toUpperCase();
 
@@ -551,5 +608,11 @@ export async function findPublicOrder(code: string) {
     },
   });
 
-  return order ?? null;
+  if (!order) return null;
+
+  const { categoryRecord, parentRecord } = await resolveCategoryContext(
+    order.categoryId,
+  );
+
+  return { ...order, categoryRecord, parentRecord };
 }

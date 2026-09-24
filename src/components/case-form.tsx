@@ -10,12 +10,13 @@ import { createCase, type CreateCaseState } from "@/server/actions/orders";
 import type { InstapayConfig } from "@/lib/instapay";
 import { formatInstapayDisplay, instapayOpensInNewTab } from "@/lib/instapay";
 import { SelectMenu } from "@/components/select-menu";
+import { pickLocale } from "@/lib/bilingual";
 import { flattenSelectableItems, type CategoryGroup } from "@/lib/categories";
 import { Spinner } from "@/components/spinner";
 import { toast } from "@/components/toast";
 import { formatEgp } from "@/lib/utils";
 
-type University = { id: string; name: string };
+type University = { id: string; name: string; nameAr: string | null };
 
 const initial: CreateCaseState = {};
 
@@ -183,7 +184,7 @@ export function CaseForm({
                   onChange={setUniversityId}
                   options={universities.map((item) => ({
                     value: item.id,
-                    label: item.name,
+                    label: pickLocale(locale, item.name, item.nameAr),
                   }))}
                   placeholder={messages.universityPlaceholder}
                   ariaLabel={messages.university}
@@ -277,7 +278,15 @@ export function CaseForm({
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">{messages.university}</dt>
-                  <dd className="font-bold">{selectedUniversity?.name}</dd>
+                  <dd className="font-bold">
+                    {selectedUniversity
+                      ? pickLocale(
+                          locale,
+                          selectedUniversity.name,
+                          selectedUniversity.nameAr,
+                        )
+                      : null}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">{messages.category}</dt>

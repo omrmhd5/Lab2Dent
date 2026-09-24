@@ -2,11 +2,14 @@ import { CategoryAnalyticsSummary } from "@/components/admin/category-analytics-
 import { CategoryGroupForm } from "@/components/admin/category-form";
 import { CategoryTable } from "@/components/admin/category-table";
 import { sumCategoryAnalytics } from "@/lib/category-analytics";
+import { getDash } from "@/i18n/dashboard";
 import { requireAdminSession } from "@/lib/auth";
+import { getLocale } from "@/lib/locale";
 import { listCategories } from "@/server/actions/categories";
 
 export default async function CategoriesPage() {
   await requireAdminSession();
+  const t = getDash(await getLocale());
   let rows: Awaited<ReturnType<typeof listCategories>> = [];
   let loadError = false;
 
@@ -21,22 +24,22 @@ export default async function CategoriesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t.categories}</h1>
         <p className="mt-2 max-w-[55ch] text-sm text-muted">
-          Add a category, then open it to manage its subcategories.
+          {t.categoriesIntro}
         </p>
         {loadError ? (
           <p className="mt-3 text-sm font-bold text-danger" role="alert">
-            Could not load categories. Run db:push, then reload.
+            {t.loadCategoriesError}
           </p>
         ) : null}
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="ui-card">
-          <h2 className="mb-4 text-sm font-bold">Add category</h2>
+          <h2 className="mb-4 text-sm font-bold">{t.addCategory}</h2>
           <CategoryGroupForm />
         </div>
-        <CategoryAnalyticsSummary title="All categories" stats={allStats} />
+        <CategoryAnalyticsSummary title={t.allCategories} stats={allStats} />
       </div>
       <CategoryTable initial={rows} />
     </div>

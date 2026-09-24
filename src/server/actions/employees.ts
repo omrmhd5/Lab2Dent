@@ -41,7 +41,9 @@ export async function listEmployees() {
       universityId: staff.universityId,
       categoryId: staff.categoryId,
       universityName: universities.name,
+      universityNameAr: universities.nameAr,
       categoryName: categories.name,
+      categoryNameAr: categories.nameAr,
       createdAt: staff.createdAt,
     })
     .from(staff)

@@ -17,7 +17,8 @@ export default async function NewCasePage() {
   const instapay = await getInstapayConfig();
 
   let categoryGroups: Awaited<ReturnType<typeof listPublicCategoryGroups>> = [];
-  let universityRows: { id: string; name: string }[] = [];
+  let universityRows: { id: string; name: string; nameAr: string | null }[] =
+    [];
   try {
     categoryGroups = await listPublicCategoryGroups();
   } catch {
@@ -29,6 +30,7 @@ export default async function NewCasePage() {
       .select({
         id: universities.id,
         name: universities.name,
+        nameAr: universities.nameAr,
       })
       .from(universities)
       .where(eq(universities.isActive, true))

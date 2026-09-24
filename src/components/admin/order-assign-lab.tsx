@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SelectMenu } from "@/components/select-menu";
 import { Spinner } from "@/components/spinner";
+import { useDash } from "@/components/dashboard-i18n";
 import { reportAction } from "@/components/toast";
 import { assignOrderToLab } from "@/server/actions/orders";
 
@@ -16,6 +17,7 @@ export function OrderAssignLabCard({
   assignedLabId: string | null;
   labs: { id: string; name: string }[];
 }) {
+  const t = useDash();
   const router = useRouter();
   const [labId, setLabId] = useState(assignedLabId ?? labs[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +25,10 @@ export function OrderAssignLabCard({
 
   return (
     <section className="ui-card h-full">
-      <h2 className="text-sm font-bold">Assign lab</h2>
+      <h2 className="text-sm font-bold">{t.assignLab}</h2>
       {labs.length === 0 ? (
         <p className="mt-3 text-sm text-muted">
-          Add an active lab account before assigning this order.
+          {t.noLabs}
         </p>
       ) : (
         <form
@@ -36,7 +38,7 @@ export function OrderAssignLabCard({
             setError(null);
             start(async () => {
               const result = await assignOrderToLab(orderId, labId);
-              reportAction(result, "Lab assigned.");
+              reportAction(result, t.labAssigned);
               if (result && "error" in result && result.error) {
                 setError(result.error);
                 return;
@@ -56,7 +58,7 @@ export function OrderAssignLabCard({
             disabled={pending || !labId}
             className="ui-press ui-btn ui-btn-primary w-full">
             {pending ? <Spinner /> : null}
-            {pending ? "Assigning…" : "Assign"}
+            {pending ? t.assigning : t.assign}
           </button>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
         </form>

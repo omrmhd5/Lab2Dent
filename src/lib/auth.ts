@@ -73,9 +73,7 @@ export async function requireStaffSession(): Promise<StaffSession> {
   const session = await getLiveStaffSession();
 
   if (!session) {
-    redirect(
-      cookieSession.isLoggedIn ? "/api/auth/session-ended" : "/login",
-    );
+    redirect(cookieSession.isLoggedIn ? "/api/auth/session-ended" : "/login");
   }
 
   return session;

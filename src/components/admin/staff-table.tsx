@@ -10,23 +10,27 @@ import {
 import { ModalOverlay } from "@/components/modal-overlay";
 import type { StaffRole } from "@/db/schema";
 import { deleteEmployee } from "@/server/actions/employees";
+import { useDash } from "@/components/dashboard-i18n";
+import { pickLocale } from "@/lib/bilingual";
+import { fill } from "@/i18n/dashboard";
 import { reportAction } from "@/components/toast";
 
 type Option = { value: string; label: string };
 
-const ROLE_LABEL: Record<StaffRole, string> = {
-  admin: "Admin",
-  employee: "Employee",
-  lab: "Lab",
-};
+function roleLabel(role: StaffRole, t: ReturnType<typeof useDash>) {
+  if (role === "admin") return t.roleAdmin;
+  if (role === "lab") return t.roleLab;
+  return t.roleEmployee;
+}
 
 function StatusPill({ active }: { active: boolean }) {
+  const t = useDash();
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
         active ? "bg-accent-soft text-accent" : "bg-danger/10 text-danger"
       }`}>
-      {active ? "Active" : "Inactive"}
+      {active ? t.active : t.inactive}
     </span>
   );
 }
@@ -44,6 +48,7 @@ function ConfirmDeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useDash();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onCancel();
@@ -64,11 +69,10 @@ function ConfirmDeleteDialog({
         aria-labelledby="delete-staff-title"
         className="ui-card w-full max-w-sm">
         <h3 id="delete-staff-title" className="text-lg font-bold">
-          Confirm delete
+          {t.confirmDelete}
         </h3>
         <p className="mt-2 text-sm text-muted">
-          Delete {name}? They will no longer be able to sign in. Order history
-          stays, without their name. This cannot be undone.
+          {fill(t.deleteStaffBody, { name })}
         </p>
         {error ? (
           <p className="mt-3 text-sm font-bold text-danger" role="status">
@@ -81,9 +85,13 @@ function ConfirmDeleteDialog({
             className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
             disabled={pending}
             onClick={onCancel}>
-            Cancel
+            {t.cancel}
           </button>
-          <ConfirmDeleteButton pending={pending} onClick={onConfirm} />
+          <ConfirmDeleteButton
+            label={t.delete}
+            pending={pending}
+            onClick={onConfirm}
+          />
         </div>
       </div>
     </ModalOverlay>
@@ -97,12 +105,18 @@ export function StaffTable({
   currentStaffId,
 }: {
   initial: Array<
-    StaffRow & { universityName: string | null; categoryName: string | null }
+    StaffRow & {
+      universityName: string | null;
+      universityNameAr: string | null;
+      categoryName: string | null;
+      categoryNameAr: string | null;
+    }
   >;
   universities: Option[];
   categories: Option[];
   currentStaffId: string;
 }) {
+  const t = useDash();
   const [rows, setRows] = useState(initial);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -126,7 +140,7 @@ export function StaffTable({
     setDeleteError(null);
     start(async () => {
       const result = await deleteEmployee(deleteId);
-      reportAction(result, "Staff deleted.");
+      reportAction(result, t.staffDeleted);
       if (result && "error" in result && result.error) {
         setDeleteError(result.error);
         return;
@@ -141,14 +155,16 @@ export function StaffTable({
         <table className="w-full table-auto text-left text-sm">
           <thead className="border-b border-border text-muted">
             <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Role</th>
-              <th className="px-4 py-3 font-medium">University</th>
-              <th className="px-4 py-3 font-medium">Category</th>
-              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">{t.name}</th>
+              <th className="px-4 py-3 font-medium">{t.email}</th>
+              <th className="px-4 py-3 font-medium whitespace-nowrap">
+                {t.role}
+              </th>
+              <th className="px-4 py-3 font-medium">{t.university}</th>
+              <th className="px-4 py-3 font-medium">{t.category}</th>
+              <th className="px-4 py-3 font-medium">{t.status}</th>
               <th className="px-4 py-3 font-medium">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">{t.actions}</span>
               </th>
             </tr>
           </thead>
@@ -156,23 +172,24 @@ export function StaffTable({
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-10 text-muted">
-                  No staff yet. Add someone above.
+                  {t.noStaffYet}
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-              <StaffTableRow
-                key={row.id}
-                row={row}
-                universities={universities}
-                categories={categories}
-                soleAdmin={
-                  row.role === "admin" &&
-                  row.isActive &&
-                  rows.filter((item) => item.role === "admin" && item.isActive)
-                    .length <= 1
-                }
-                canDelete={row.id !== currentStaffId}
+                <StaffTableRow
+                  key={row.id}
+                  row={row}
+                  universities={universities}
+                  categories={categories}
+                  soleAdmin={
+                    row.role === "admin" &&
+                    row.isActive &&
+                    rows.filter(
+                      (item) => item.role === "admin" && item.isActive,
+                    ).length <= 1
+                  }
+                  canDelete={row.id !== currentStaffId}
                   onRequestDelete={() => {
                     setDeleteError(null);
                     setDeleteId(row.id);
@@ -209,7 +226,9 @@ function StaffTableRow({
 }: {
   row: StaffRow & {
     universityName: string | null;
+    universityNameAr: string | null;
     categoryName: string | null;
+    categoryNameAr: string | null;
   };
   universities: Option[];
   categories: Option[];
@@ -217,6 +236,7 @@ function StaffTableRow({
   soleAdmin: boolean;
   onRequestDelete: () => void;
 }) {
+  const t = useDash();
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -237,7 +257,7 @@ function StaffTableRow({
               type="button"
               className="ui-press ui-btn ui-btn-secondary ui-btn-sm shrink-0"
               onClick={() => setEditing(false)}>
-              Cancel
+              {t.cancel}
             </button>
           </div>
         </td>
@@ -249,21 +269,29 @@ function StaffTableRow({
     <tr className="border-b border-border last:border-0">
       <td className="px-4 py-3 font-bold">{row.name}</td>
       <td className="px-4 py-3">{row.email}</td>
-      <td className="px-4 py-3 whitespace-nowrap">{ROLE_LABEL[row.role]}</td>
-      <td className="px-4 py-3 text-muted">{row.universityName ?? "—"}</td>
-      <td className="px-4 py-3 text-muted">{row.categoryName ?? "—"}</td>
+      <td className="px-4 py-3 whitespace-nowrap">{roleLabel(row.role, t)}</td>
+      <td className="px-4 py-3 text-muted">
+        {row.universityName
+          ? pickLocale(t.locale, row.universityName, row.universityNameAr)
+          : "—"}
+      </td>
+      <td className="px-4 py-3 text-muted">
+        {row.categoryName
+          ? pickLocale(t.locale, row.categoryName, row.categoryNameAr)
+          : "—"}
+      </td>
       <td className="px-4 py-3">
         <StatusPill active={row.isActive} />
       </td>
       <td className="px-4 py-3">
         <div className="flex justify-end gap-2">
           <EditIconButton
-            label={`Edit ${row.name}`}
+            label={fill(t.editName, { name: row.name })}
             onClick={() => setEditing(true)}
           />
           {canDelete ? (
             <DeleteIconButton
-              label={`Delete ${row.name}`}
+              label={fill(t.deleteName, { name: row.name })}
               onClick={onRequestDelete}
             />
           ) : null}

@@ -22,14 +22,16 @@ export function SiteHeader({
           <nav className="flex items-center gap-1.5">
             <Link
               href="/track"
-              className="ui-press inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold text-muted"
-            >
+              className="ui-press inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold text-muted">
               {messages.navTrack}
             </Link>
             <Link href="/new-case" className="ui-press ui-btn ui-btn-primary">
               {messages.navRegister}
             </Link>
-            <ThemeToggle toLight={messages.themeToLight} toDark={messages.themeToDark} />
+            <ThemeToggle
+              toLight={messages.themeToLight}
+              toDark={messages.themeToDark}
+            />
             <LanguageToggle locale={locale} />
           </nav>
         </div>
@@ -44,7 +46,9 @@ export function SiteFooter({ messages }: { messages: Messages }) {
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-8 sm:px-6 md:flex-row md:items-end md:justify-between">
         <div className="space-y-3">
           <BrandMark label={messages.brand} />
-          <p className="max-w-[48ch] text-sm leading-relaxed text-muted">{messages.footerNote}</p>
+          <p className="max-w-[48ch] text-sm leading-relaxed text-muted">
+            {messages.footerNote}
+          </p>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold">
           <Link href="/new-case" className="ui-press">
@@ -53,7 +57,7 @@ export function SiteFooter({ messages }: { messages: Messages }) {
           <Link href="/track" className="ui-press">
             {messages.navTrack}
           </Link>
-          <Link href="/login" className="ui-press">
+          <Link href="/dashboard" className="ui-press">
             {messages.navStaff}
           </Link>
         </div>

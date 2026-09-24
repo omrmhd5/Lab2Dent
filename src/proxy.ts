@@ -16,6 +16,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  await session.save();
+
   return response;
 }
 

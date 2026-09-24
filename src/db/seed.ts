@@ -6,11 +6,11 @@ import { getDirectDatabaseUrl } from "../lib/db-url";
 import { siteSettings, staff, universities, type StaffRole } from "./schema";
 
 const sampleUniversities = [
-  { name: "Cairo University", sortOrder: 0 },
-  { name: "Ain Shams University", sortOrder: 1 },
-  { name: "Alexandria University", sortOrder: 2 },
-  { name: "Mansoura University", sortOrder: 3 },
-  { name: "Tanta University", sortOrder: 4 },
+  { name: "Cairo University", nameAr: "جامعة القاهرة", sortOrder: 0 },
+  { name: "Ain Shams University", nameAr: "جامعة عين شمس", sortOrder: 1 },
+  { name: "Alexandria University", nameAr: "جامعة الإسكندرية", sortOrder: 2 },
+  { name: "Mansoura University", nameAr: "جامعة المنصورة", sortOrder: 3 },
+  { name: "Tanta University", nameAr: "جامعة طنطا", sortOrder: 4 },
 ];
 
 const demoStaff: {

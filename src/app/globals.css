@@ -26,6 +26,10 @@
   --shadow-sm: 0 1px 2px rgb(19 53 99 / 0.06);
   --shadow-md: 0 12px 32px rgb(19 53 99 / 0.1);
   --shadow-lg: 0 24px 50px rgb(19 53 99 / 0.14);
+  --scrollbar-size: 5px;
+  --scrollbar-thumb: color-mix(in srgb, var(--muted) 45%, var(--border));
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--muted) 70%, var(--border));
+  --scrollbar-track: transparent;
 }
 
 html.dark {
@@ -48,6 +52,8 @@ html.dark {
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
   --shadow-md: 0 16px 40px rgb(0 0 0 / 0.4);
   --shadow-lg: 0 28px 64px rgb(0 0 0 / 0.5);
+  --scrollbar-thumb: color-mix(in srgb, var(--muted) 35%, var(--border));
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--muted) 55%, var(--border));
 }
 
 @theme inline {
@@ -91,6 +97,37 @@ html.dark .photo-frame img {
 html[dir="rtl"] body {
   font-family:
     var(--font-noto-arabic), var(--font-atkinson), system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 *:focus-visible {
@@ -204,6 +241,16 @@ html[dir="rtl"] body {
 .toast-out {
   opacity: 0;
   transform: translateX(-1.25rem);
+}
+
+:dir(rtl) .toast-in {
+  @starting-style {
+    transform: translateX(1.25rem);
+  }
+}
+
+:dir(rtl) .toast-out {
+  transform: translateX(1.25rem);
 }
 
 .ui-btn {

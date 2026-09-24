@@ -2,6 +2,9 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Spinner } from "@/components/spinner";
+import { useDash } from "@/components/dashboard-i18n";
+import { pickLocale } from "@/lib/bilingual";
+import { fill } from "@/i18n/dashboard";
 import { reportAction } from "@/components/toast";
 import {
   DeleteIconButton,
@@ -18,30 +21,33 @@ import type { CategoryFieldType } from "@/db/schema";
 type FieldRow = {
   id: string;
   label: string;
+  labelAr: string | null;
   type: CategoryFieldType;
   required: boolean;
 };
 
 function TypeSelect({ defaultValue }: { defaultValue?: CategoryFieldType }) {
+  const t = useDash();
   return (
     <SelectMenu
       name="type"
       defaultValue={defaultValue ?? "text"}
-      ariaLabel="Type"
+      ariaLabel={t.type}
       className="w-[7.5rem] shrink-0"
       options={[
-        { value: "text", label: "Text" },
-        { value: "image", label: "Image" },
+        { value: "text", label: t.text },
+        { value: "image", label: t.image },
       ]}
     />
   );
 }
 
 function RequiredCheck({ defaultChecked }: { defaultChecked?: boolean }) {
+  const t = useDash();
   return (
     <label className="flex shrink-0 items-center gap-2 text-sm whitespace-nowrap">
       <input type="checkbox" name="required" defaultChecked={defaultChecked} />
-      Required
+      {t.required}
     </label>
   );
 }
@@ -53,6 +59,7 @@ export function CategoryFieldsEditor({
   categoryId: string;
   fields: FieldRow[];
 }) {
+  const t = useDash();
   const [createState, createAction, createPending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
       return createCategoryField(formData);
@@ -61,7 +68,7 @@ export function CategoryFieldsEditor({
   );
 
   useEffect(() => {
-    reportAction(createState, "Field added.");
+    reportAction(createState, t.fieldAdded);
   }, [createState]);
 
   return (
@@ -69,13 +76,21 @@ export function CategoryFieldsEditor({
       <form
         key={fields.map((field) => field.id).join("|")}
         action={createAction}
-        className="flex flex-nowrap items-center gap-2">
+        className="flex flex-wrap items-center gap-2">
         <input type="hidden" name="categoryId" value={categoryId} />
         <input
           className="ui-input ui-input-grow"
           name="label"
-          placeholder="Field label"
-          aria-label="Field label"
+          placeholder={t.english}
+          aria-label={t.english}
+          required
+        />
+        <input
+          className="ui-input ui-input-grow"
+          name="labelAr"
+          dir="rtl"
+          placeholder={t.arabic}
+          aria-label={t.arabic}
           required
         />
         <TypeSelect />
@@ -85,7 +100,7 @@ export function CategoryFieldsEditor({
           disabled={createPending}
           className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
           {createPending ? <Spinner /> : null}
-          {createPending ? "Adding…" : "Add"}
+          {createPending ? t.adding : t.add}
         </button>
       </form>
       {createState && "error" in createState && createState.error ? (
@@ -94,7 +109,7 @@ export function CategoryFieldsEditor({
 
       <div className="space-y-3">
         {fields.length === 0 ? (
-          <p className="text-sm text-muted">No fields yet.</p>
+          <p className="text-sm text-muted">{t.noFields}</p>
         ) : (
           fields.map((field) => (
             <FieldEditor key={field.id} categoryId={categoryId} field={field} />
@@ -105,8 +120,11 @@ export function CategoryFieldsEditor({
   );
 }
 
-function fieldTypeLabel(type: CategoryFieldType) {
-  return type === "image" ? "Image" : "Text";
+function fieldTypeLabel(
+  type: CategoryFieldType,
+  t: ReturnType<typeof useDash>,
+) {
+  return type === "image" ? t.image : t.text;
 }
 
 function FieldEditor({
@@ -116,6 +134,7 @@ function FieldEditor({
   categoryId: string;
   field: FieldRow;
 }) {
+  const t = useDash();
   const [editing, setEditing] = useState(false);
   const [state, action, pending] = useActionState(
     async (
@@ -135,12 +154,12 @@ function FieldEditor({
 
   useEffect(() => {
     if (!state) return;
-    reportAction(state, "Field saved.");
+    reportAction(state, t.fieldSaved);
     if ("ok" in state && state.ok) setEditing(false);
   }, [state]);
 
   useEffect(() => {
-    reportAction(deleteState, "Field deleted.");
+    reportAction(deleteState, t.fieldDeleted);
   }, [deleteState]);
 
   return (
@@ -156,7 +175,15 @@ function FieldEditor({
               className="ui-input ui-input-grow"
               name="label"
               defaultValue={field.label}
-              aria-label="Field label"
+              aria-label={t.english}
+              required
+            />
+            <input
+              className="ui-input ui-input-grow"
+              name="labelAr"
+              dir="rtl"
+              defaultValue={field.labelAr ?? ""}
+              aria-label={t.arabic}
               required
             />
             <TypeSelect defaultValue={field.type} />
@@ -166,7 +193,7 @@ function FieldEditor({
               disabled={pending}
               className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
               {pending ? <Spinner /> : null}
-              {pending ? "Saving…" : "Save"}
+              {pending ? t.saving : t.save}
             </button>
           </form>
           <button
@@ -174,18 +201,20 @@ function FieldEditor({
             className="ui-press ui-btn ui-btn-secondary ui-btn-sm shrink-0"
             disabled={pending}
             onClick={() => setEditing(false)}>
-            Cancel
+            {t.cancel}
           </button>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
-          <p className="min-w-0 flex-1 font-bold">{field.label}</p>
-          <p className="text-sm text-muted">{fieldTypeLabel(field.type)}</p>
+          <p className="min-w-0 flex-1 font-bold">
+            {pickLocale(t.locale, field.label, field.labelAr)}
+          </p>
+          <p className="text-sm text-muted">{fieldTypeLabel(field.type, t)}</p>
           <p className="text-sm text-muted">
-            {field.required ? "Required" : "Optional"}
+            {field.required ? t.required : t.optional}
           </p>
           <EditIconButton
-            label={`Edit ${field.label}`}
+            label={fill(t.editName, { name: field.label })}
             onClick={() => setEditing(true)}
           />
           <form action={deleteAction}>
@@ -193,7 +222,7 @@ function FieldEditor({
             <input type="hidden" name="categoryId" value={categoryId} />
             <DeleteIconButton
               type="submit"
-              label={`Delete ${field.label}`}
+              label={fill(t.deleteName, { name: field.label })}
               pending={deletePending}
             />
           </form>

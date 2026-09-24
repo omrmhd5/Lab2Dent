@@ -14,7 +14,10 @@ import {
 } from "@/components/admin/order-detail-sections";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
+import { pickLocale } from "@/lib/bilingual";
+import { getDash } from "@/i18n/dashboard";
 import { requireStaffSession } from "@/lib/auth";
+import { getLocale } from "@/lib/locale";
 import { statusesForRole } from "@/lib/status";
 import { formatDateTime } from "@/lib/utils";
 import { getOrderDetail, listLabStaff } from "@/server/actions/orders";
@@ -25,7 +28,11 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = await requireStaffSession();
+  const [session, locale] = await Promise.all([
+    requireStaffSession(),
+    getLocale(),
+  ]);
+  const t = getDash(locale);
   const [order, labs] = await Promise.all([
     getOrderDetail(id),
     session.role !== "lab" ? listLabStaff() : Promise.resolve([]),
@@ -49,7 +56,7 @@ export default async function OrderDetailPage({
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
   );
 
-  const submittedAt = formatDateTime(order.createdAt);
+  const submittedAt = formatDateTime(order.createdAt, locale);
 
   return (
     <div className="space-y-8">
@@ -57,7 +64,7 @@ export default async function OrderDetailPage({
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-4">
             <Link href="/dashboard" className="text-sm text-muted">
-              Back to orders
+              {t.orders}
             </Link>
             {session.role === "admin" ? (
               <OrderDeleteButton orderId={order.id} orderCode={order.code} />
@@ -67,11 +74,14 @@ export default async function OrderDetailPage({
             <span className="text-muted">#{order.orderNumber}</span>{" "}
             {order.code}
           </h1>
-          <p className="mt-2 text-sm text-muted">Submitted {submittedAt}</p>
+          <p className="mt-2 text-sm text-muted">
+            {t.submitted} {submittedAt}
+          </p>
         </div>
         <OrderStatusPill
           status={order.status}
           labName={order.assignedLab?.name}
+          locale={locale}
         />
       </div>
 
@@ -79,10 +89,18 @@ export default async function OrderDetailPage({
         <OrderStudentCard
           name={order.studentName}
           phone={order.studentPhone}
-          university={order.studentUniversity}
+          university={pickLocale(
+            locale,
+            order.studentUniversity,
+            order.studentUniversityAr,
+          )}
         />
         <OrderWorkCard
-          categoryName={order.categoryName}
+          categoryName={pickLocale(
+            locale,
+            order.categoryName,
+            order.categoryNameAr,
+          )}
           priceEgp={order.priceEgp}
           costEgp={costEgp}
           showPrice={showPrice}
@@ -111,7 +129,7 @@ export default async function OrderDetailPage({
         }}
         fields={order.fieldValues.map((field) => ({
           id: field.id,
-          label: field.label,
+          label: pickLocale(locale, field.label, field.labelAr),
           type: field.type,
           textValue: field.textValue,
           imageKey: field.imageKey,

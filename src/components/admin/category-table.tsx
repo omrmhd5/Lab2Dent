@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CategoryGroupDeleteButton } from "@/components/admin/category-group-delete-button";
+import { useDash } from "@/components/dashboard-i18n";
+import { pickLocale } from "@/lib/bilingual";
 import {
   isCategoryGroup,
   isSelectableCategory,
@@ -11,17 +13,19 @@ import {
 import { formatEgp } from "@/lib/utils";
 
 function StatusPill({ active }: { active: boolean }) {
+  const t = useDash();
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
         active ? "bg-accent-soft text-accent" : "bg-danger/10 text-danger"
       }`}>
-      {active ? "Active" : "Hidden"}
+      {active ? t.active : t.hidden}
     </span>
   );
 }
 
 export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
+  const t = useDash();
   const [rows, setRows] = useState(initial);
   const signature = initial
     .map(
@@ -61,15 +65,15 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
       <table className="w-full min-w-[960px] text-left text-sm">
         <thead className="border-b border-border text-muted">
           <tr>
-            <th className="px-4 py-3 font-medium">Category</th>
-            <th className="px-4 py-3 font-medium">Subcategories</th>
-            <th className="px-4 py-3 font-medium">Orders</th>
-            <th className="px-4 py-3 font-medium">Total prices</th>
-            <th className="px-4 py-3 font-medium">Total costs</th>
-            <th className="px-4 py-3 font-medium">Total profit</th>
-            <th className="px-4 py-3 font-medium">Status</th>
+            <th className="px-4 py-3 font-medium">{t.category}</th>
+            <th className="px-4 py-3 font-medium">{t.subcategories}</th>
+            <th className="px-4 py-3 font-medium">{t.ordersColumn}</th>
+            <th className="px-4 py-3 font-medium">{t.totalPrices}</th>
+            <th className="px-4 py-3 font-medium">{t.totalCosts}</th>
+            <th className="px-4 py-3 font-medium">{t.totalProfit}</th>
+            <th className="px-4 py-3 font-medium">{t.status}</th>
             <th className="px-4 py-3 font-medium">
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{t.actions}</span>
             </th>
           </tr>
         </thead>
@@ -77,7 +81,7 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
           {groups.length === 0 ? (
             <tr>
               <td colSpan={8} className="px-4 py-10 text-muted">
-                No categories yet. Add one above.
+                {t.noCategoriesYet}
               </td>
             </tr>
           ) : (
@@ -87,7 +91,9 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
                 <tr
                   key={group.id}
                   className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-bold">{group.name}</td>
+                  <td className="px-4 py-3 font-bold">
+                    {pickLocale(t.locale, group.name, group.nameAr)}
+                  </td>
                   <td className="px-4 py-3">{count}</td>
                   <td className="px-4 py-3 font-mono">
                     {group.confirmedOrderCount}
@@ -109,7 +115,7 @@ export function CategoryTable({ initial }: { initial: CategoryRecord[] }) {
                       <Link
                         href={`/dashboard/categories/${group.id}`}
                         className="ui-press ui-btn ui-btn-secondary ui-btn-sm">
-                        View
+                        {t.view}
                       </Link>
                       <CategoryGroupDeleteButton
                         id={group.id}

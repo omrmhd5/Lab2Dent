@@ -14,6 +14,9 @@ import {
   EditIconButton,
 } from "@/components/admin/icon-action-buttons";
 import { deleteCategory } from "@/server/actions/categories";
+import { useDash } from "@/components/dashboard-i18n";
+import { pickLocale } from "@/lib/bilingual";
+import { fill } from "@/i18n/dashboard";
 import { reportAction } from "@/components/toast";
 import { ModalOverlay } from "@/components/modal-overlay";
 import type { CategoryFieldType } from "@/db/schema";
@@ -24,6 +27,7 @@ type FieldRow = {
   id: string;
   categoryId: string;
   label: string;
+  labelAr: string | null;
   type: CategoryFieldType;
   required: boolean;
 };
@@ -35,12 +39,13 @@ type DeleteTarget = {
 };
 
 function StatusPill({ active }: { active: boolean }) {
+  const t = useDash();
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
         active ? "bg-accent-soft text-accent" : "bg-danger/10 text-danger"
       }`}>
-      {active ? "Active" : "Hidden"}
+      {active ? t.active : t.hidden}
     </span>
   );
 }
@@ -58,6 +63,7 @@ export function ConfirmDeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useDash();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onCancel();
@@ -68,8 +74,8 @@ export function ConfirmDeleteDialog({
 
   const message =
     target.kind === "group"
-      ? `Delete "${target.name}" and all its subcategories? All related orders will be deleted permanently. This cannot be undone.`
-      : `Delete subcategory "${target.name}"? All orders for this work type will be deleted permanently. This cannot be undone.`;
+      ? fill(t.deleteCategoryGroupBody, { name: target.name })
+      : fill(t.deleteSubcategoryBody, { name: target.name });
 
   return (
     <ModalOverlay
@@ -83,7 +89,7 @@ export function ConfirmDeleteDialog({
         aria-labelledby="delete-dialog-title"
         className="ui-card w-full max-w-sm">
         <h3 id="delete-dialog-title" className="text-lg font-bold">
-          Confirm delete
+          {t.confirmDelete}
         </h3>
         <p className="mt-2 text-sm text-muted">{message}</p>
         {notice ? (
@@ -97,9 +103,13 @@ export function ConfirmDeleteDialog({
             className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
             disabled={pending}
             onClick={onCancel}>
-            Cancel
+            {t.cancel}
           </button>
-          <ConfirmDeleteButton pending={pending} onClick={onConfirm} />
+          <ConfirmDeleteButton
+            label={t.delete}
+            pending={pending}
+            onClick={onConfirm}
+          />
         </div>
       </div>
     </ModalOverlay>
@@ -115,6 +125,7 @@ export function CategoryManager({
   subcategories: CategoryRecord[];
   fields: FieldRow[];
 }) {
+  const t = useDash();
   const router = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
@@ -124,7 +135,7 @@ export function CategoryManager({
     setDeleteNotice(null);
     start(async () => {
       const result = await deleteCategory(id);
-      reportAction(result, "Deleted.");
+      reportAction(result, t.deleted);
       if (result && "error" in result && result.error) {
         setDeleteNotice(result.error);
         return;
@@ -141,21 +152,21 @@ export function CategoryManager({
   return (
     <div className="space-y-8">
       <section className="ui-card space-y-3">
-        <p className="text-sm font-bold">Edit category</p>
+        <p className="text-sm font-bold">{t.editCategory}</p>
         <CategoryGroupForm group={group} layout="row" />
       </section>
 
       <section className="space-y-3">
-        <p className="text-sm font-bold">Add subcategory</p>
+        <p className="text-sm font-bold">{t.addSubcategory}</p>
         <div className="ui-card">
           <SubcategoryForm parentId={group.id} layout="row" />
         </div>
       </section>
 
       <section className="space-y-4">
-        <p className="text-sm font-bold">Subcategories</p>
+        <p className="text-sm font-bold">{t.subcategories}</p>
         {subcategories.length === 0 ? (
-          <p className="text-sm text-muted">No subcategories yet.</p>
+          <p className="text-sm text-muted">{t.noSubcategories}</p>
         ) : (
           subcategories.map((subcategory) => (
             <SubcategoryCard
@@ -207,6 +218,7 @@ function SubcategoryCard({
   fields: FieldRow[];
   onRequestDelete: () => void;
 }) {
+  const t = useDash();
   const [editing, setEditing] = useState(false);
   const [fieldsOpen, setFieldsOpen] = useState(false);
 
@@ -224,12 +236,14 @@ function SubcategoryCard({
             type="button"
             className="ui-press ui-btn ui-btn-secondary ui-btn-sm shrink-0"
             onClick={() => setEditing(false)}>
-            Cancel
+            {t.cancel}
           </button>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
-          <p className="min-w-0 flex-1 font-bold">{subcategory.name}</p>
+          <p className="min-w-0 flex-1 font-bold">
+            {pickLocale(t.locale, subcategory.name, subcategory.nameAr)}
+          </p>
           <p className="font-mono text-sm">
             {subcategory.priceEgp === null
               ? "—"
@@ -237,17 +251,19 @@ function SubcategoryCard({
           </p>
           <p className="font-mono text-sm text-muted">
             {subcategory.costEgp === null
-              ? "Cost —"
-              : `Cost ${formatEgp(subcategory.costEgp)}`}
+              ? t.costDash
+              : fill(t.costValue, { amount: formatEgp(subcategory.costEgp) })}
           </p>
           <p className="font-mono text-sm">
             {subcategory.priceEgp === null || subcategory.costEgp === null
-              ? "Profit —"
-              : `Profit ${formatEgp(subcategory.priceEgp - subcategory.costEgp)}`}
+              ? t.profitDash
+              : fill(t.profitValue, {
+                  amount: formatEgp(subcategory.priceEgp - subcategory.costEgp),
+                })}
           </p>
           <StatusPill active={subcategory.isActive} />
-          <EditIconButton onClick={() => setEditing(true)} />
-          <DeleteIconButton onClick={onRequestDelete} />
+          <EditIconButton label={t.edit} onClick={() => setEditing(true)} />
+          <DeleteIconButton label={t.delete} onClick={onRequestDelete} />
         </div>
       )}
 
@@ -258,7 +274,7 @@ function SubcategoryCard({
           aria-expanded={fieldsOpen}
           onClick={() => setFieldsOpen((open) => !open)}>
           <span className="text-sm font-bold">
-            Fields
+            {t.fields}
             {fields.length > 0 ? (
               <span className="ms-2 font-normal text-muted">
                 ({fields.length})
@@ -288,6 +304,7 @@ function SubcategoryCard({
               fields={fields.map((field) => ({
                 id: field.id,
                 label: field.label,
+                labelAr: field.labelAr,
                 type: field.type,
                 required: field.required,
               }))}

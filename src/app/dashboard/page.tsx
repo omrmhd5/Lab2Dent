@@ -3,7 +3,10 @@ import { SubmitButton } from "@/components/submit-button";
 import { OrdersTable } from "@/components/admin/orders-table";
 import { SelectMenu } from "@/components/select-menu";
 import type { OrderStatus } from "@/db/schema";
+import { pickLocale } from "@/lib/bilingual";
+import { getDash } from "@/i18n/dashboard";
 import { requireStaffSession } from "@/lib/auth";
+import { getLocale } from "@/lib/locale";
 import { ORDER_STATUSES, STATUS_LABELS, statusesForRole } from "@/lib/status";
 import { listOrders } from "@/server/actions/orders";
 import { listUniversities } from "@/server/actions/universities";
@@ -13,7 +16,11 @@ export default async function AdminOrdersPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; university?: string }>;
 }) {
-  const session = await requireStaffSession();
+  const [session, locale] = await Promise.all([
+    requireStaffSession(),
+    getLocale(),
+  ]);
+  const t = getDash(locale);
   const { status, q, university } = await searchParams;
   const selectedStatus =
     status && ORDER_STATUSES.includes(status as OrderStatus)
@@ -35,25 +42,25 @@ export default async function AdminOrdersPage({
 
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{t.orders}</h1>
       <form className="ui-card mt-6 flex flex-wrap gap-3">
         <input
           className="ui-input max-w-xs"
           name="q"
           defaultValue={q ?? ""}
-          placeholder="Search name, phone, code, or #"
+          placeholder={t.searchOrders}
         />
         {isLab ? null : (
           <SelectMenu
             name="university"
             className="w-72 shrink-0"
             defaultValue={selectedUniversity}
-            ariaLabel="Filter by university"
+            ariaLabel={t.filterUniversity}
             options={[
-              { value: "all", label: "All universities" },
+              { value: "all", label: t.allUniversities },
               ...universities.map((row) => ({
                 value: row.id,
-                label: row.name,
+                label: pickLocale(locale, row.name, row.nameAr),
               })),
             ]}
           />
@@ -62,16 +69,16 @@ export default async function AdminOrdersPage({
           name="status"
           className="w-72 shrink-0"
           defaultValue={selectedStatus}
-          ariaLabel="Filter by status"
+          ariaLabel={t.filterStatus}
           options={[
-            { value: "all", label: "All statuses" },
+            { value: "all", label: t.allStatuses },
             ...statusOptions.map((value) => ({
               value,
-              label: STATUS_LABELS[value].en,
+              label: STATUS_LABELS[value][locale],
             })),
           ]}
         />
-        <SubmitButton className="ui-press ui-btn ui-btn-primary">Filter</SubmitButton>
+        <SubmitButton className="ui-press ui-btn ui-btn-primary">{t.filter}</SubmitButton>
         <OrdersExportButton orders={orders} role={session.role} />
       </form>
       <div className="mt-6">

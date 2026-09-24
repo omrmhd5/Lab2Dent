@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import type { OrderStatus } from "@/db/schema";
 import { STATUS_LABELS, selectableStatuses } from "@/lib/status";
 import { Spinner } from "@/components/spinner";
+import { useDash } from "@/components/dashboard-i18n";
 import { reportAction } from "@/components/toast";
 import { updateOrderStatus } from "@/server/actions/orders";
 import { SelectMenu } from "@/components/select-menu";
@@ -18,6 +19,7 @@ export function OrderStatusForm({
   status: OrderStatus;
   allowedStatuses: OrderStatus[];
 }) {
+  const t = useDash();
   const router = useRouter();
   const [pending, start] = useTransition();
   const options = selectableStatuses(allowedStatuses, status);
@@ -25,7 +27,7 @@ export function OrderStatusForm({
   if (options.length === 0) {
     return (
       <p className="text-sm text-muted">
-        No further status changes available for this order.
+        {t.noFurtherStatus}
       </p>
     );
   }
@@ -39,7 +41,7 @@ export function OrderStatusForm({
         const next = String(form.get("status")) as OrderStatus;
         start(async () => {
           const result = await updateOrderStatus(orderId, next);
-          reportAction(result, "Status saved.");
+          reportAction(result, t.statusSaved);
           if (result && "ok" in result && result.ok) router.refresh();
         });
       }}>
@@ -50,7 +52,7 @@ export function OrderStatusForm({
         ariaLabel="Status"
         options={options.map((value) => ({
           value,
-          label: STATUS_LABELS[value].en,
+          label: STATUS_LABELS[value][t.locale],
         }))}
       />
       <button

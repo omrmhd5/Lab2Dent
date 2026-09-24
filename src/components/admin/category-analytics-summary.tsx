@@ -1,3 +1,6 @@
+"use client";
+
+import { useDash } from "@/components/dashboard-i18n";
 import { formatEgp } from "@/lib/utils";
 
 export type CategoryAnalytics = {
@@ -14,11 +17,12 @@ export function CategoryAnalyticsSummary({
   title: string;
   stats: CategoryAnalytics;
 }) {
+  const t = useDash();
   const items = [
-    { label: "Confirmed orders", value: String(stats.orderCount) },
-    { label: "Total prices", value: formatEgp(stats.totalPriceEgp) },
-    { label: "Total costs", value: formatEgp(stats.totalCostEgp) },
-    { label: "Total profit", value: formatEgp(stats.totalProfitEgp) },
+    { label: t.confirmedOrders, value: String(stats.orderCount) },
+    { label: t.totalPrices, value: formatEgp(stats.totalPriceEgp) },
+    { label: t.totalCosts, value: formatEgp(stats.totalCostEgp) },
+    { label: t.totalProfit, value: formatEgp(stats.totalProfitEgp) },
   ];
 
   return (

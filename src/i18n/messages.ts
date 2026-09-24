@@ -6,6 +6,7 @@ export const messages = {
     navRegister: "Register a case",
     navTrack: "Track a case",
     navStaff: "Staff",
+    navHome: "Home",
     heroEyebrow: "For dental students in Egypt",
     slogan: "We handle the rest.",
     heroBody:
@@ -92,6 +93,7 @@ export const messages = {
     navRegister: "تسجيل حالة",
     navTrack: "تتبع حالة",
     navStaff: "الموظفين",
+    navHome: "الرئيسية",
     heroEyebrow: "لطلبة طب الأسنان في مصر",
     slogan: "إحنا نتولى الباقي.",
     heroBody: "سجل حالتك، حوّل إنستاباي، وتابع الحالة بكود التتبع.",

@@ -4,8 +4,17 @@ import { asc, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { orderFieldValues, orders, universities } from "@/db/schema";
+import { readLocalizedPair } from "@/lib/bilingual";
 import { requireAdminSession } from "@/lib/auth";
+import { getLocale } from "@/lib/locale";
 import { deleteStoredImages } from "@/lib/storage";
+
+async function namesRequired() {
+  const locale = await getLocale();
+  return locale === "ar"
+    ? "الاسم بالإنجليزية والعربية مطلوب."
+    : "English and Arabic names are required.";
+}
 
 export async function listUniversities(includeInactive = false) {
   const rows = await db
@@ -20,10 +29,14 @@ export async function listUniversities(includeInactive = false) {
 export async function createUniversity(formData: FormData) {
   await requireAdminSession();
 
-  const name = String(formData.get("name") ?? "").trim();
+  const { english: name, arabic: nameAr } = readLocalizedPair(
+    formData,
+    "name",
+    "nameAr",
+  );
 
-  if (!name) {
-    return { error: "Name is required." };
+  if (!name || !nameAr) {
+    return { error: await namesRequired() };
   }
 
   const [last] = await db
@@ -34,6 +47,7 @@ export async function createUniversity(formData: FormData) {
 
   await db.insert(universities).values({
     name,
+    nameAr,
     sortOrder: (last?.sortOrder ?? -1) + 1,
     isActive: true,
   });
@@ -47,17 +61,22 @@ export async function updateUniversity(formData: FormData) {
   await requireAdminSession();
 
   const id = String(formData.get("id") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const { english: name, arabic: nameAr } = readLocalizedPair(
+    formData,
+    "name",
+    "nameAr",
+  );
   const isActive = String(formData.get("isActive") ?? "") === "on";
 
-  if (!id || !name) {
-    return { error: "Name is required." };
+  if (!id || !name || !nameAr) {
+    return { error: await namesRequired() };
   }
 
   await db
     .update(universities)
     .set({
       name,
+      nameAr,
       isActive,
       updatedAt: new Date(),
     })

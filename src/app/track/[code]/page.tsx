@@ -4,6 +4,7 @@ import { ToastOnMount } from "@/components/toast";
 import { CopyButton } from "@/components/copy-button";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { getMessages } from "@/i18n/messages";
+import { pickOrderCategoryLabel } from "@/lib/categories";
 import { getLocale } from "@/lib/locale";
 import { OrderStatusPill } from "@/components/admin/status-pill";
 import { formatDateTime, formatEgp } from "@/lib/utils";
@@ -97,7 +98,14 @@ export default async function TrackCodePage({
               <dt className="text-sm font-bold text-muted">
                 {messages.category}
               </dt>
-              <dd className="mt-1 text-lg font-bold">{order.categoryName}</dd>
+              <dd className="mt-1 text-lg font-bold">
+                {pickOrderCategoryLabel(
+                  locale,
+                  order,
+                  order.categoryRecord,
+                  order.parentRecord,
+                )}
+              </dd>
             </div>
             <div className="rounded-2xl bg-brand-soft p-4">
               <dt className="text-sm font-bold text-muted">

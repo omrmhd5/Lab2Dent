@@ -7,6 +7,8 @@ import {
   DeleteIconButton,
 } from "@/components/admin/icon-action-buttons";
 import { ModalOverlay } from "@/components/modal-overlay";
+import { useDash } from "@/components/dashboard-i18n";
+import { fill } from "@/i18n/dashboard";
 import { deleteOrders } from "@/server/actions/orders";
 import { reportAction } from "@/components/toast";
 
@@ -23,6 +25,7 @@ function ConfirmDeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useDash();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onCancel();
@@ -43,10 +46,10 @@ function ConfirmDeleteDialog({
         aria-labelledby="delete-order-title"
         className="ui-card w-full max-w-sm">
         <h3 id="delete-order-title" className="text-lg font-bold">
-          Confirm delete
+          {t.confirmDelete}
         </h3>
         <p className="mt-2 text-sm text-muted">
-          Delete {label}? This cannot be undone.
+          {fill(t.deleteOrderBody, { label })}
         </p>
         {error ? (
           <p className="mt-3 text-sm font-bold text-danger" role="status">
@@ -59,9 +62,13 @@ function ConfirmDeleteDialog({
             className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
             disabled={pending}
             onClick={onCancel}>
-            Cancel
+            {t.cancel}
           </button>
-          <ConfirmDeleteButton pending={pending} onClick={onConfirm} />
+          <ConfirmDeleteButton
+            label={t.delete}
+            pending={pending}
+            onClick={onConfirm}
+          />
         </div>
       </div>
     </ModalOverlay>
@@ -75,6 +82,7 @@ export function OrderDeleteButton({
   orderId: string;
   orderCode: string;
 }) {
+  const t = useDash();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +92,7 @@ export function OrderDeleteButton({
     setError(null);
     start(async () => {
       const result = await deleteOrders([orderId]);
-      reportAction(result, "Order deleted.");
+      reportAction(result, t.orderDeleted);
       if (result && "error" in result && result.error) {
         setError(result.error);
         return;
@@ -97,7 +105,7 @@ export function OrderDeleteButton({
   return (
     <>
       <DeleteIconButton
-        label={`Delete order ${orderCode}`}
+        label={fill(t.deleteOrderLabel, { code: orderCode })}
         onClick={() => {
           setError(null);
           setOpen(true);
@@ -105,7 +113,7 @@ export function OrderDeleteButton({
       />
       {open ? (
         <ConfirmDeleteDialog
-          label={`order ${orderCode}`}
+          label={fill(t.orderWithCode, { code: orderCode })}
           pending={pending}
           error={error}
           onConfirm={confirmDelete}

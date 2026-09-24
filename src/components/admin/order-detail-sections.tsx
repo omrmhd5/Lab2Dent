@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { getDash } from "@/i18n/dashboard";
+import { getLocale } from "@/lib/locale";
 import type { OrderStatus } from "@/db/schema";
 import { statusDotClass } from "@/lib/status";
 import { OrderStatusPill } from "@/components/admin/status-pill";
@@ -26,7 +28,7 @@ export function DetailRow({
   );
 }
 
-export function OrderStudentCard({
+export async function OrderStudentCard({
   name,
   phone,
   university,
@@ -35,19 +37,20 @@ export function OrderStudentCard({
   phone: string;
   university: string;
 }) {
+  const t = getDash(await getLocale());
   return (
     <section className="ui-card h-full">
-      <h2 className="text-sm font-bold">Student</h2>
+      <h2 className="text-sm font-bold">{t.studentCard}</h2>
       <dl className="mt-2 divide-y divide-border">
-        <DetailRow label="Name" value={name} />
-        <DetailRow label="Phone" value={phone} mono />
-        <DetailRow label="University" value={university} />
+        <DetailRow label={t.name} value={name} />
+        <DetailRow label={t.phone} value={phone} mono />
+        <DetailRow label={t.university} value={university} />
       </dl>
     </section>
   );
 }
 
-export function OrderWorkCard({
+export async function OrderWorkCard({
   categoryName,
   priceEgp,
   costEgp,
@@ -60,26 +63,27 @@ export function OrderWorkCard({
   showPrice: boolean;
   showMoney: boolean;
 }) {
+  const t = getDash(await getLocale());
   const profit = costEgp === null ? null : priceEgp - costEgp;
 
   return (
     <section className="ui-card h-full">
-      <h2 className="text-sm font-bold">Work</h2>
+      <h2 className="text-sm font-bold">{t.work}</h2>
       <dl className="mt-2 divide-y divide-border">
-        <DetailRow label="Service" value={categoryName} />
+        <DetailRow label={t.service} value={categoryName} />
         {showPrice ? (
-          <DetailRow label="Price" value={formatEgp(priceEgp)} mono />
+          <DetailRow label={t.price} value={formatEgp(priceEgp)} mono />
         ) : null}
         {showMoney ? (
           <DetailRow
-            label="Cost"
+            label={t.cost}
             value={costEgp === null ? "—" : formatEgp(costEgp)}
             mono
           />
         ) : null}
         {showMoney ? (
           <DetailRow
-            label="Profit"
+            label={t.profit}
             value={profit === null ? "—" : formatEgp(profit)}
             mono
           />
@@ -89,7 +93,7 @@ export function OrderWorkCard({
   );
 }
 
-export function OrderStatusCard({
+export async function OrderStatusCard({
   orderId,
   status,
   allowedStatuses,
@@ -98,9 +102,10 @@ export function OrderStatusCard({
   status: OrderStatus;
   allowedStatuses: OrderStatus[];
 }) {
+  const t = getDash(await getLocale());
   return (
     <section className="ui-card h-full">
-      <h2 className="text-sm font-bold">Update status</h2>
+      <h2 className="text-sm font-bold">{t.updateStatus}</h2>
       <div className="mt-3">
         <OrderStatusForm
           orderId={orderId}
@@ -112,7 +117,7 @@ export function OrderStatusCard({
   );
 }
 
-export function OrderCaseDetailsCard({
+export async function OrderCaseDetailsCard({
   orderId,
   legacy,
   fields,
@@ -132,6 +137,7 @@ export function OrderCaseDetailsCard({
     sortOrder: number;
   }[];
 }) {
+  const t = getDash(await getLocale());
   const sortedFields = [...fields].sort((a, b) => a.sortOrder - b.sortOrder);
   const hasLegacy = Boolean(
     legacy.shade || legacy.toothNotes || legacy.extraNotes,
@@ -142,18 +148,18 @@ export function OrderCaseDetailsCard({
 
   return (
     <section className="ui-card">
-      <h2 className="text-sm font-bold">Case details</h2>
+      <h2 className="text-sm font-bold">{t.caseDetails}</h2>
       <div className="mt-4 space-y-4">
         {hasLegacy ? (
           <dl className="divide-y divide-border rounded-2xl border border-border px-4">
             {legacy.shade ? (
-              <DetailRow label="Shade" value={legacy.shade} />
+              <DetailRow label={t.shade} value={legacy.shade} />
             ) : null}
             {legacy.toothNotes ? (
-              <DetailRow label="Teeth / details" value={legacy.toothNotes} />
+              <DetailRow label={t.teeth} value={legacy.toothNotes} />
             ) : null}
             {legacy.extraNotes ? (
-              <DetailRow label="Lab notes" value={legacy.extraNotes} />
+              <DetailRow label={t.labNotes} value={legacy.extraNotes} />
             ) : null}
           </dl>
         ) : null}
@@ -187,13 +193,12 @@ export function OrderCaseDetailsCard({
   );
 }
 
-export function OrderPaymentCard({ orderId }: { orderId: string }) {
+export async function OrderPaymentCard({ orderId }: { orderId: string }) {
+  const t = getDash(await getLocale());
   return (
     <section className="ui-card">
-      <h2 className="text-sm font-bold">Instapay screenshot</h2>
-      <p className="mt-1 text-sm text-muted">
-        Payment proof uploaded with this case.
-      </p>
+      <h2 className="text-sm font-bold">{t.payment}</h2>
+      <p className="mt-1 text-sm text-muted">{t.paymentHint}</p>
       <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-brand-soft/30">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -206,7 +211,7 @@ export function OrderPaymentCard({ orderId }: { orderId: string }) {
   );
 }
 
-export function OrderHistoryCard({
+export async function OrderHistoryCard({
   events,
 }: {
   events: {
@@ -217,11 +222,12 @@ export function OrderHistoryCard({
     staff: { name: string } | null;
   }[];
 }) {
+  const t = getDash(await getLocale());
   if (events.length === 0) return null;
 
   return (
     <section className="ui-card">
-      <h2 className="text-sm font-bold">History</h2>
+      <h2 className="text-sm font-bold">{t.history}</h2>
       <ol className="relative mt-4 space-y-0 border-s border-border ps-5">
         {events.map((event, index) => (
           <li key={event.id} className="relative pb-6 ps-1 last:pb-0">
@@ -236,10 +242,11 @@ export function OrderHistoryCard({
                   ? event.note.slice("Assigned to ".length)
                   : null
               }
+              locale={t.locale}
               className="px-2.5 py-1 text-xs"
             />
             <p className="mt-0.5 text-sm text-muted">
-              {formatDateTime(event.createdAt)}
+              {formatDateTime(event.createdAt, t.locale)}
               {event.staff?.name ? ` · ${event.staff.name}` : ""}
             </p>
             {index === 0 ? (

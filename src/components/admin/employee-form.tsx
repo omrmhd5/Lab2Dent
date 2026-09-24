@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { Spinner } from "@/components/spinner";
+import { useDash } from "@/components/dashboard-i18n";
 import { reportAction } from "@/components/toast";
 import { createEmployee, updateEmployee } from "@/server/actions/employees";
 import { SelectMenu } from "@/components/select-menu";
@@ -19,12 +20,6 @@ export type StaffRow = {
 
 type Option = { value: string; label: string };
 
-const ROLE_OPTIONS = [
-  { value: "employee", label: "Employee" },
-  { value: "lab", label: "Lab" },
-  { value: "admin", label: "Admin" },
-];
-
 export function EmployeeForm({
   employee,
   universities,
@@ -38,6 +33,15 @@ export function EmployeeForm({
   onSuccess?: () => void;
   soleAdmin?: boolean;
 }) {
+  const t = useDash();
+  const roleOptions = useMemo(
+    () => [
+      { value: "employee", label: t.roleEmployee },
+      { value: "lab", label: t.roleLab },
+      { value: "admin", label: t.roleAdmin },
+    ],
+    [t.roleEmployee, t.roleLab, t.roleAdmin],
+  );
   const action = employee ? updateEmployee : createEmployee;
   const [role, setRole] = useState<StaffRole>(employee?.role ?? "employee");
   const [state, formAction, pending] = useActionState(
@@ -52,23 +56,26 @@ export function EmployeeForm({
 
   useEffect(() => {
     if (!state) return;
-    reportAction(state, employee ? "Staff saved." : "Staff added.");
+    reportAction(state, employee ? t.staffSaved : t.staffAdded);
     if ("ok" in state && state.ok) onSuccess?.();
     // onSuccess identity changes when the parent re-renders; only the action result should toast.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   const universityOptions = [
-    { value: "", label: "Any university" },
+    { value: "", label: t.anyUniversity },
     ...universities,
   ];
-  const categoryOptions = [{ value: "", label: "Any category" }, ...categories];
+  const categoryOptions = [
+    { value: "", label: t.anyCategory },
+    ...categories,
+  ];
 
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-3">
       {employee ? <input type="hidden" name="id" value={employee.id} /> : null}
       <label className="space-y-1">
-        <span className="block text-xs text-muted">Name</span>
+        <span className="block text-xs text-muted">{t.name}</span>
         <input
           className="ui-input min-w-40"
           name="name"
@@ -77,7 +84,7 @@ export function EmployeeForm({
         />
       </label>
       <label className="space-y-1">
-        <span className="block text-xs text-muted">Email</span>
+        <span className="block text-xs text-muted">{t.email}</span>
         <input
           className="ui-input min-w-52"
           name="email"
@@ -88,7 +95,7 @@ export function EmployeeForm({
       </label>
       <label className="space-y-1">
         <span className="block text-xs text-muted">
-          {employee ? "New password" : "Password"}
+          {employee ? t.newPassword : t.password}
         </span>
         <input
           className="ui-input min-w-40"
@@ -99,21 +106,21 @@ export function EmployeeForm({
         />
       </label>
       <label className="space-y-1">
-        <span className="block text-xs text-muted">Role</span>
+        <span className="block text-xs text-muted">{t.role}</span>
         <SelectMenu
           name="role"
           value={role}
           onChange={(next) => setRole(next as StaffRole)}
           options={
             soleAdmin
-              ? ROLE_OPTIONS.filter((option) => option.value === "admin")
-              : ROLE_OPTIONS
+              ? roleOptions.filter((option) => option.value === "admin")
+              : roleOptions
           }
         />
       </label>
       {role === "employee" ? (
         <label className="space-y-1">
-          <span className="block text-xs text-muted">University</span>
+          <span className="block text-xs text-muted">{t.university}</span>
           <SelectMenu
             name="universityId"
             className="w-56"
@@ -126,7 +133,7 @@ export function EmployeeForm({
       )}
       {role === "employee" ? (
         <label className="space-y-1">
-          <span className="block text-xs text-muted">Category</span>
+          <span className="block text-xs text-muted">{t.category}</span>
           <SelectMenu
             name="categoryId"
             className="w-56"
@@ -148,7 +155,7 @@ export function EmployeeForm({
           {soleAdmin ? (
             <input type="hidden" name="isActive" value="on" />
           ) : null}
-          Active
+          {t.active}
         </label>
       ) : null}
       <button
@@ -156,7 +163,7 @@ export function EmployeeForm({
         disabled={pending}
         className="ui-press ui-btn ui-btn-primary">
         {pending ? <Spinner /> : null}
-        {pending ? "Saving…" : employee ? "Save" : "Add staff"}
+        {pending ? t.saving : employee ? t.save : t.addStaff}
       </button>
       {state && "error" in state && state.error ? (
         <p className="w-full text-sm text-danger">{state.error}</p>

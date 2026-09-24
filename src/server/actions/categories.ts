@@ -11,20 +11,31 @@ import {
 } from "@/db/schema";
 import {
   buildCategoryGroups,
+  localizeGroups,
   isCategoryGroup,
   isSelectableCategory,
   type CategoryFieldDef,
   type CategoryRecord,
 } from "@/lib/categories";
+import { readLocalizedPair } from "@/lib/bilingual";
 import { requireAdminSession } from "@/lib/auth";
+import { getLocale } from "@/lib/locale";
 import { removeOrdersFromCategoryStats } from "@/lib/category-stats";
 import { deleteStoredImages } from "@/lib/storage";
+
+async function namesRequired() {
+  const locale = await getLocale();
+  return locale === "ar"
+    ? "الاسم بالإنجليزية والعربية مطلوب."
+    : "English and Arabic names are required.";
+}
 
 function toRecord(row: typeof categories.$inferSelect): CategoryRecord {
   return {
     id: row.id,
     parentId: row.parentId,
     name: row.name,
+    nameAr: row.nameAr,
     priceEgp: row.priceEgp,
     costEgp: row.costEgp,
     confirmedOrderCount: row.confirmedOrderCount,
@@ -54,6 +65,7 @@ export async function listPublicCategoryGroups() {
       id: categoryFields.id,
       categoryId: categoryFields.categoryId,
       label: categoryFields.label,
+      labelAr: categoryFields.labelAr,
       type: categoryFields.type,
       required: categoryFields.required,
       sortOrder: categoryFields.sortOrder,
@@ -67,13 +79,17 @@ export async function listPublicCategoryGroups() {
     list.push({
       id: field.id,
       label: field.label,
+      labelAr: field.labelAr,
       type: field.type,
       required: field.required,
     });
     fieldsByCategory.set(field.categoryId, list);
   }
 
-  return buildCategoryGroups(rows, fieldsByCategory);
+  return localizeGroups(
+    buildCategoryGroups(rows, fieldsByCategory),
+    await getLocale(),
+  );
 }
 
 async function nextSortOrder(parentId: string | null) {
@@ -94,11 +110,16 @@ async function nextSortOrder(parentId: string | null) {
 export async function createCategoryGroup(formData: FormData) {
   await requireAdminSession();
 
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "Name is required." };
+  const { english: name, arabic: nameAr } = readLocalizedPair(
+    formData,
+    "name",
+    "nameAr",
+  );
+  if (!name || !nameAr) return { error: await namesRequired() };
 
   await db.insert(categories).values({
     name,
+    nameAr,
     sortOrder: await nextSortOrder(null),
     isActive: true,
     priceEgp: null,
@@ -115,19 +136,29 @@ export async function createSubcategory(formData: FormData) {
   await requireAdminSession();
 
   const parentId = String(formData.get("parentId") ?? "").trim();
-  const name = String(formData.get("name") ?? "").trim();
+  const { english: name, arabic: nameAr } = readLocalizedPair(
+    formData,
+    "name",
+    "nameAr",
+  );
   const priceEgp = Number(formData.get("priceEgp"));
   const costEgp = Number(formData.get("costEgp"));
 
   if (
     !parentId ||
     !name ||
+    !nameAr ||
     !Number.isFinite(priceEgp) ||
     priceEgp < 0 ||
     !Number.isFinite(costEgp) ||
     costEgp < 0
   ) {
-    return { error: "Name, price, and cost are required." };
+    return {
+      error:
+        (await getLocale()) === "ar"
+          ? "الاسم بالإنجليزية والعربية والسعر والتكلفة مطلوبة."
+          : "English name, Arabic name, price, and cost are required.",
+    };
   }
 
   const [parent] = await db
@@ -145,6 +176,7 @@ export async function createSubcategory(formData: FormData) {
   await db.insert(categories).values({
     parentId,
     name,
+    nameAr,
     priceEgp: Math.round(priceEgp),
     costEgp: Math.round(costEgp),
     sortOrder: await nextSortOrder(parentId),
@@ -161,14 +193,18 @@ export async function updateCategoryGroup(formData: FormData) {
   await requireAdminSession();
 
   const id = String(formData.get("id") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const { english: name, arabic: nameAr } = readLocalizedPair(
+    formData,
+    "name",
+    "nameAr",
+  );
   const isActive = String(formData.get("isActive") ?? "") === "on";
 
-  if (!id || !name) return { error: "Name is required." };
+  if (!id || !name || !nameAr) return { error: await namesRequired() };
 
   await db
     .update(categories)
-    .set({ name, isActive, updatedAt: new Date() })
+    .set({ name, nameAr, isActive, updatedAt: new Date() })
     .where(eq(categories.id, id));
 
   if (!isActive) {
@@ -188,7 +224,11 @@ export async function updateSubcategory(formData: FormData) {
   await requireAdminSession();
 
   const id = String(formData.get("id") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const { english: name, arabic: nameAr } = readLocalizedPair(
+    formData,
+    "name",
+    "nameAr",
+  );
   const priceEgp = Number(formData.get("priceEgp"));
   const costEgp = Number(formData.get("costEgp"));
   const isActive = String(formData.get("isActive") ?? "") === "on";
@@ -196,18 +236,25 @@ export async function updateSubcategory(formData: FormData) {
   if (
     !id ||
     !name ||
+    !nameAr ||
     !Number.isFinite(priceEgp) ||
     priceEgp < 0 ||
     !Number.isFinite(costEgp) ||
     costEgp < 0
   ) {
-    return { error: "Name, price, and cost are required." };
+    return {
+      error:
+        (await getLocale()) === "ar"
+          ? "الاسم بالإنجليزية والعربية والسعر والتكلفة مطلوبة."
+          : "English name, Arabic name, price, and cost are required.",
+    };
   }
 
   await db
     .update(categories)
     .set({
       name,
+      nameAr,
       priceEgp: Math.round(priceEgp),
       costEgp: Math.round(costEgp),
       isActive,

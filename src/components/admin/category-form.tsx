@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Spinner } from "@/components/spinner";
+import { useDash } from "@/components/dashboard-i18n";
 import { reportAction } from "@/components/toast";
 import {
   createCategoryGroup,
@@ -10,6 +11,7 @@ import {
   updateSubcategory,
 } from "@/server/actions/categories";
 import type { CategoryRecord } from "@/lib/categories";
+import { fill } from "@/i18n/dashboard";
 import { formatEgp } from "@/lib/utils";
 
 function digitsOnly(value: string) {
@@ -25,9 +27,10 @@ export function CategoryGroupForm({
   group,
   layout = "default",
 }: {
-  group?: Pick<CategoryRecord, "id" | "name" | "isActive">;
+  group?: Pick<CategoryRecord, "id" | "name" | "nameAr" | "isActive">;
   layout?: "default" | "row" | "stack";
 }) {
+  const t = useDash();
   const action = group ? updateCategoryGroup : createCategoryGroup;
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
@@ -37,7 +40,7 @@ export function CategoryGroupForm({
   );
 
   useEffect(() => {
-    reportAction(state, group ? "Category saved." : "Category added.");
+    reportAction(state, group ? t.categorySaved : t.categoryAdded);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
@@ -46,14 +49,23 @@ export function CategoryGroupForm({
       <div className="space-y-2">
         <form
           action={formAction}
-          className="flex flex-nowrap items-center gap-2">
+          className="flex flex-wrap items-center gap-2">
           {group ? <input type="hidden" name="id" value={group.id} /> : null}
           <input
             className="ui-input ui-input-grow"
             name="name"
             defaultValue={group?.name ?? ""}
-            placeholder="Category name"
-            aria-label="Category name"
+            placeholder={t.english}
+            aria-label={t.english}
+            required
+          />
+          <input
+            className="ui-input ui-input-grow"
+            name="nameAr"
+            dir="rtl"
+            defaultValue={group?.nameAr ?? ""}
+            placeholder={t.arabic}
+            aria-label={t.arabic}
             required
           />
           {group ? (
@@ -63,7 +75,7 @@ export function CategoryGroupForm({
                 name="isActive"
                 defaultChecked={group.isActive}
               />
-              Active
+              {t.active}
             </label>
           ) : null}
           <button
@@ -71,7 +83,7 @@ export function CategoryGroupForm({
             disabled={pending}
             className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
             {pending ? <Spinner /> : null}
-            {group ? "Save" : "Add category"}
+            {group ? t.save : t.addCategory}
           </button>
         </form>
         {state && "error" in state && state.error ? (
@@ -89,12 +101,23 @@ export function CategoryGroupForm({
       }`}>
       {group ? <input type="hidden" name="id" value={group.id} /> : null}
       <label className="space-y-1">
-        <span className="block text-xs text-muted">Category name</span>
+        <span className="block text-xs text-muted">{t.english}</span>
         <input
           className="ui-input min-w-48"
           name="name"
           defaultValue={group?.name ?? ""}
-          placeholder="e.g. Crown"
+          placeholder="Crown"
+          required
+        />
+      </label>
+      <label className="space-y-1">
+        <span className="block text-xs text-muted">{t.arabic}</span>
+        <input
+          className="ui-input min-w-48"
+          name="nameAr"
+          dir="rtl"
+          defaultValue={group?.nameAr ?? ""}
+          placeholder="تاج"
           required
         />
       </label>
@@ -105,7 +128,7 @@ export function CategoryGroupForm({
             name="isActive"
             defaultChecked={group.isActive}
           />
-          Active
+          {t.active}
         </label>
       ) : null}
       <button
@@ -113,7 +136,7 @@ export function CategoryGroupForm({
         disabled={pending}
         className="ui-press ui-btn ui-btn-primary">
         {pending ? <Spinner /> : null}
-        {group ? "Save" : "Add category"}
+        {group ? t.save : t.addCategory}
       </button>
       {state && "error" in state && state.error ? (
         <p className="text-sm text-danger">{state.error}</p>
@@ -131,11 +154,12 @@ export function SubcategoryForm({
   parentId: string;
   subcategory?: Pick<
     CategoryRecord,
-    "id" | "name" | "priceEgp" | "costEgp" | "isActive"
+    "id" | "name" | "nameAr" | "priceEgp" | "costEgp" | "isActive"
   >;
   layout?: "default" | "row" | "compact" | "stack";
   onSuccess?: () => void;
 }) {
+  const t = useDash();
   const action = subcategory ? updateSubcategory : createSubcategory;
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
@@ -148,7 +172,7 @@ export function SubcategoryForm({
     if (!state) return;
     reportAction(
       state,
-      subcategory ? "Subcategory saved." : "Subcategory added.",
+      subcategory ? t.subcategorySaved : t.subcategoryAdded,
     );
     if ("ok" in state && state.ok) onSuccess?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -181,8 +205,17 @@ export function SubcategoryForm({
             className="ui-input ui-input-grow"
             name="name"
             defaultValue={subcategory?.name ?? ""}
-            placeholder="Name"
-            aria-label="Name"
+            placeholder={t.english}
+            aria-label={t.english}
+            required
+          />
+          <input
+            className="ui-input ui-input-grow"
+            name="nameAr"
+            dir="rtl"
+            defaultValue={subcategory?.nameAr ?? ""}
+            placeholder={t.arabic}
+            aria-label={t.arabic}
             required
           />
           <input
@@ -192,8 +225,8 @@ export function SubcategoryForm({
             inputMode="numeric"
             pattern="[0-9]+"
             value={price}
-            placeholder="Price"
-            aria-label="Price EGP"
+            placeholder={t.price}
+            aria-label={t.priceEgp}
             onChange={(event) => setPrice(digitsOnly(event.target.value))}
             required
           />
@@ -204,15 +237,17 @@ export function SubcategoryForm({
             inputMode="numeric"
             pattern="[0-9]+"
             value={cost}
-            placeholder="Cost"
-            aria-label="Cost EGP"
+            placeholder={t.cost}
+            aria-label={t.costEgp}
             onChange={(event) => setCost(digitsOnly(event.target.value))}
             required
           />
           <span
             className="shrink-0 whitespace-nowrap font-mono text-sm"
             aria-live="polite">
-            {profit === null ? "Profit —" : `Profit ${formatEgp(profit)}`}
+            {profit === null
+              ? t.profitDash
+              : fill(t.profitValue, { amount: formatEgp(profit) })}
           </span>
           <label className="flex shrink-0 items-center gap-2 text-sm whitespace-nowrap">
             <input
@@ -220,14 +255,14 @@ export function SubcategoryForm({
               name="isActive"
               defaultChecked={subcategory?.isActive ?? true}
             />
-            Active
+            {t.active}
           </label>
           <button
             type="submit"
             disabled={pending}
             className="ui-press ui-btn ui-btn-primary ui-btn-sm shrink-0">
             {pending ? <Spinner /> : null}
-            {subcategory ? "Save" : "Add subcategory"}
+            {subcategory ? t.save : t.addSubcategory}
           </button>
         </form>
         {state && "error" in state && state.error ? (
@@ -249,17 +284,28 @@ export function SubcategoryForm({
       ) : null}
       <>
         <label className="space-y-1">
-          <span className="block text-xs text-muted">Name</span>
+          <span className="block text-xs text-muted">{t.english}</span>
           <input
             className={`ui-input ${layout === "stack" ? "w-full" : "min-w-40"}`}
             name="name"
             defaultValue={subcategory?.name ?? ""}
-            placeholder="e.g. Zirconia"
+            placeholder="Zirconia"
             required
           />
         </label>
         <label className="space-y-1">
-          <span className="block text-xs text-muted">Price EGP</span>
+          <span className="block text-xs text-muted">{t.arabic}</span>
+          <input
+            className={`ui-input ${layout === "stack" ? "w-full" : "min-w-40"}`}
+            name="nameAr"
+            dir="rtl"
+            defaultValue={subcategory?.nameAr ?? ""}
+            placeholder="زركونيا"
+            required
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="block text-xs text-muted">{t.priceEgp}</span>
           <input
             className={`ui-input ${layout === "stack" ? "w-full" : "w-32"}`}
             name="priceEgp"
@@ -272,7 +318,7 @@ export function SubcategoryForm({
           />
         </label>
         <label className="space-y-1">
-          <span className="block text-xs text-muted">Cost EGP</span>
+          <span className="block text-xs text-muted">{t.costEgp}</span>
           <input
             className={`ui-input ${layout === "stack" ? "w-full" : "w-32"}`}
             name="costEgp"
@@ -285,7 +331,9 @@ export function SubcategoryForm({
           />
         </label>
         <p className="text-sm font-mono">
-          {profit === null ? "Profit —" : `Profit ${formatEgp(profit)}`}
+          {profit === null
+            ? t.profitDash
+            : fill(t.profitValue, { amount: formatEgp(profit) })}
         </p>
         {subcategory ? (
           <label
@@ -297,7 +345,7 @@ export function SubcategoryForm({
               name="isActive"
               defaultChecked={subcategory.isActive}
             />
-            Active
+            {t.active}
           </label>
         ) : null}
         <button
@@ -305,7 +353,7 @@ export function SubcategoryForm({
           disabled={pending}
           className="ui-press ui-btn ui-btn-primary">
           {pending ? <Spinner /> : null}
-          {subcategory ? "Save" : "Add subcategory"}
+          {subcategory ? t.save : t.addSubcategory}
         </button>
       </>
       {state && "error" in state && state.error ? (

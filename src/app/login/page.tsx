@@ -1,8 +1,11 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
 import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BrandMark } from "@/components/brand-mark";
 import { getMessages } from "@/i18n/messages";
+import { getLiveStaffSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale";
 
 export default async function LoginPage({
@@ -13,6 +16,12 @@ export default async function LoginPage({
   const locale = await getLocale();
   const messages = getMessages(locale);
   const { from } = await searchParams;
+
+  const session = await getLiveStaffSession();
+  if (session) {
+    const target = from?.startsWith("/dashboard") ? from : "/dashboard";
+    redirect(target);
+  }
 
   return (
     <main className="grid min-h-dvh md:grid-cols-2">
@@ -50,6 +59,13 @@ export default async function LoginPage({
           <div className="ui-card mt-8">
             <LoginForm messages={messages} from={from ?? "/dashboard"} />
           </div>
+          <p className="mt-6 text-center">
+            <Link
+              href="/"
+              className="ui-press text-sm font-bold text-muted hover:text-foreground">
+              {messages.navHome}
+            </Link>
+          </p>
           <aside className="mt-6 rounded-2xl border border-dashed border-border bg-brand-soft/50 px-4 py-4">
             <p className="text-sm font-bold">{messages.demoTitle}</p>
             <dl className="mt-3 space-y-3 text-sm">

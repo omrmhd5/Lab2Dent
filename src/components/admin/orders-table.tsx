@@ -16,6 +16,9 @@ import {
 import { bulkUpdateStatus, deleteOrders } from "@/server/actions/orders";
 import { SelectMenu } from "@/components/select-menu";
 import { Spinner } from "@/components/spinner";
+import { pickLocale } from "@/lib/bilingual";
+import { useDash } from "@/components/dashboard-i18n";
+import { fill } from "@/i18n/dashboard";
 import { reportAction } from "@/components/toast";
 
 export type OrderRow = {
@@ -23,6 +26,8 @@ export type OrderRow = {
   orderNumber: number;
   code: string;
   categoryName: string;
+  categoryNameAr: string | null;
+  studentUniversityAr: string | null;
   priceEgp: number;
   costEgp: number | null;
   status: OrderStatus;
@@ -103,6 +108,7 @@ function ConfirmDeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useDash();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onCancel();
@@ -123,10 +129,10 @@ function ConfirmDeleteDialog({
         aria-labelledby="delete-order-title"
         className="ui-card w-full max-w-sm">
         <h3 id="delete-order-title" className="text-lg font-bold">
-          Confirm delete
+          {t.confirmDelete}
         </h3>
         <p className="mt-2 text-sm text-muted">
-          Delete {label}? This cannot be undone.
+          {fill(t.deleteOrderBody, { label })}
         </p>
         {error ? (
           <p className="mt-3 text-sm font-bold text-danger" role="status">
@@ -139,9 +145,13 @@ function ConfirmDeleteDialog({
             className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
             disabled={pending}
             onClick={onCancel}>
-            Cancel
+            {t.cancel}
           </button>
-          <ConfirmDeleteButton pending={pending} onClick={onConfirm} />
+          <ConfirmDeleteButton
+            label={t.delete}
+            pending={pending}
+            onClick={onConfirm}
+          />
         </div>
       </div>
     </ModalOverlay>
@@ -157,6 +167,7 @@ export function OrdersTable({
   role: StaffRole;
   allowedStatuses: OrderStatus[];
 }) {
+  const t = useDash();
   const showPrice = role !== "lab";
   const showMoney = role === "admin";
   const canDelete = role === "admin";
@@ -233,7 +244,7 @@ export function OrdersTable({
       const result = await deleteOrders(deleteTarget.ids);
       reportAction(
         result,
-        deleteTarget.ids.length === 1 ? "Order deleted." : "Orders deleted.",
+        deleteTarget.ids.length === 1 ? t.orderDeleted : t.ordersDeleted,
       );
       if (result && "error" in result && result.error) {
         setDeleteError(result.error);
@@ -251,17 +262,19 @@ export function OrdersTable({
     <div className="min-w-0">
       {selected.length > 0 ? (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-[var(--shadow-md)]">
-          <p className="text-sm">{selected.length} selected</p>
+          <p className="text-sm">
+            {fill(t.selectedCount, { count: selected.length })}
+          </p>
           <SelectMenu
             className="w-72 shrink-0"
-            ariaLabel="Bulk status"
+            ariaLabel={t.bulkStatus}
             value={
               bulkStatusOptions.includes(status) ? status : bulkStatusOptions[0]
             }
             onChange={(next) => setStatus(next as OrderStatus)}
             options={bulkStatusOptions.map((value) => ({
               value,
-              label: STATUS_LABELS[value].en,
+              label: STATUS_LABELS[value][t.locale],
             }))}
           />
           <button
@@ -271,7 +284,7 @@ export function OrdersTable({
             onClick={() => {
               start(async () => {
                 const result = await bulkUpdateStatus(selected, status);
-                reportAction(result, "Status saved.");
+                reportAction(result, t.statusSaved);
                 if ("error" in result && result.error) {
                   setError(result.error);
                   return;
@@ -282,18 +295,24 @@ export function OrdersTable({
               });
             }}>
             {pending ? <Spinner /> : null}
-            Update status
+            {t.updateStatusButton}
           </button>
           {canDelete ? (
             <DeleteIconButton
-              label={`Delete ${selected.length} selected order${selected.length === 1 ? "" : "s"}`}
+              label={fill(t.deleteSelectedOrders, {
+                count: selected.length,
+                orders:
+                  selected.length === 1 ? t.orderSingular : t.orderPlural,
+              })}
               variant="solid"
               pending={deletePending}
               onClick={() => {
                 setDeleteError(null);
+                const ordersLabel =
+                  selected.length === 1 ? t.orderSingular : t.orderPlural;
                 setDeleteTarget({
                   ids: selected,
-                  label: `${selected.length} order${selected.length === 1 ? "" : "s"}`,
+                  label: `${selected.length} ${ordersLabel}`,
                 });
               }}
             />
@@ -310,29 +329,29 @@ export function OrdersTable({
                   type="checkbox"
                   checked={allSelected}
                   onChange={() => setSelected(allSelected ? [] : allIds)}
-                  aria-label="Select all orders"
+                  aria-label={t.selectAll}
                 />
               </th>
               <SortableHeader
-                label="No."
+                label={t.number}
                 sortKey="orderNumber"
                 activeKey={sortKey}
                 sortDir={sortDir}
                 onSort={toggleSort}
               />
               <th className="w-px px-2 py-3 font-medium whitespace-nowrap">
-                Code
+                {t.code}
               </th>
               <th className="px-2 py-3 font-medium whitespace-nowrap">
-                Student
+                {t.student}
               </th>
               <th className="px-2 py-3 font-medium whitespace-nowrap">
-                University
+                {t.university}
               </th>
-              <th className="px-2 py-3 font-medium whitespace-nowrap">Work</th>
+              <th className="px-2 py-3 font-medium whitespace-nowrap">{t.work}</th>
               {showPrice ? (
                 <SortableHeader
-                  label="Price"
+                  label={t.price}
                   sortKey="priceEgp"
                   activeKey={sortKey}
                   sortDir={sortDir}
@@ -341,7 +360,7 @@ export function OrdersTable({
               ) : null}
               {showMoney ? (
                 <SortableHeader
-                  label="Cost"
+                  label={t.cost}
                   sortKey="costEgp"
                   activeKey={sortKey}
                   sortDir={sortDir}
@@ -350,7 +369,7 @@ export function OrdersTable({
               ) : null}
               {showMoney ? (
                 <SortableHeader
-                  label="Profit"
+                  label={t.profit}
                   sortKey="profit"
                   activeKey={sortKey}
                   sortDir={sortDir}
@@ -358,7 +377,7 @@ export function OrdersTable({
                 />
               ) : null}
               <th className="w-px px-2 py-3 font-medium whitespace-nowrap">
-                Status
+                {t.status}
               </th>
               {canDelete ? (
                 <th className="w-px px-2 py-3">
@@ -404,10 +423,14 @@ export function OrdersTable({
                     </div>
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap">
-                    {order.studentUniversity}
+                    {pickLocale(
+                      t.locale,
+                      order.studentUniversity,
+                      order.studentUniversityAr,
+                    )}
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap">
-                    {order.categoryName}
+                    {pickLocale(t.locale, order.categoryName, order.categoryNameAr)}
                   </td>
                   {showPrice ? (
                     <td className="w-px px-2 py-3 font-mono text-xs whitespace-nowrap">
@@ -430,13 +453,14 @@ export function OrdersTable({
                     <OrderStatusPill
                       status={order.status}
                       labName={order.assignedLabName}
+                      locale={t.locale}
                       className="px-2.5 py-1"
                     />
                   </td>
                   {canDelete ? (
                     <td className="w-px px-2 py-3 whitespace-nowrap">
                       <DeleteIconButton
-                        label={`Delete order ${order.code}`}
+                        label={fill(t.deleteOrderLabel, { code: order.code })}
                         onClick={() => {
                           setDeleteError(null);
                           setDeleteTarget({

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ConfirmDeleteDialog } from "@/components/admin/category-manager";
 import { DeleteIconButton } from "@/components/admin/icon-action-buttons";
 import { deleteCategory } from "@/server/actions/categories";
+import { useDash } from "@/components/dashboard-i18n";
 import { reportAction } from "@/components/toast";
 
 export function CategoryGroupDeleteButton({
@@ -14,6 +15,7 @@ export function CategoryGroupDeleteButton({
   id: string;
   name: string;
 }) {
+  const t = useDash();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -24,7 +26,7 @@ export function CategoryGroupDeleteButton({
     setNotice(null);
     start(async () => {
       const result = await deleteCategory(id);
-      reportAction(result, "Category deleted.");
+      reportAction(result, t.categoryDeleted);
       if (result && "error" in result && result.error) {
         setNotice(result.error);
         return;
@@ -41,7 +43,7 @@ export function CategoryGroupDeleteButton({
   return (
     <>
       <DeleteIconButton
-        label="Delete category"
+        label={t.deleteCategoryLabel}
         onClick={() => {
           setNotice(null);
           setOpen(true);

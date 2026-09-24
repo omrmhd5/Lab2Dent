@@ -3,6 +3,9 @@
 import { useEffect, useState, useTransition } from "react";
 import { UniversityForm } from "@/components/admin/university-form";
 import { deleteUniversity } from "@/server/actions/universities";
+import { useDash } from "@/components/dashboard-i18n";
+import { pickLocale } from "@/lib/bilingual";
+import { fill } from "@/i18n/dashboard";
 import { reportAction } from "@/components/toast";
 import {
   ConfirmDeleteButton,
@@ -14,16 +17,18 @@ import { ModalOverlay } from "@/components/modal-overlay";
 type University = {
   id: string;
   name: string;
+  nameAr: string | null;
   isActive: boolean;
 };
 
 function StatusPill({ active }: { active: boolean }) {
+  const t = useDash();
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
         active ? "bg-accent-soft text-accent" : "bg-danger/10 text-danger"
       }`}>
-      {active ? "Active" : "Hidden"}
+      {active ? t.active : t.hidden}
     </span>
   );
 }
@@ -41,6 +46,7 @@ function ConfirmDeleteDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useDash();
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onCancel();
@@ -61,11 +67,10 @@ function ConfirmDeleteDialog({
         aria-labelledby="delete-university-title"
         className="ui-card w-full max-w-sm">
         <h3 id="delete-university-title" className="text-lg font-bold">
-          Confirm delete
+          {t.confirmDelete}
         </h3>
         <p className="mt-2 text-sm text-muted">
-          Delete &quot;{name}&quot; and all orders from students at this
-          university? This cannot be undone.
+          {fill(t.deleteUniversityBody, { name })}
         </p>
         {error ? (
           <p className="mt-3 text-sm font-bold text-danger" role="status">
@@ -78,9 +83,13 @@ function ConfirmDeleteDialog({
             className="ui-press ui-btn ui-btn-secondary ui-btn-sm"
             disabled={pending}
             onClick={onCancel}>
-            Cancel
+            {t.cancel}
           </button>
-          <ConfirmDeleteButton pending={pending} onClick={onConfirm} />
+          <ConfirmDeleteButton
+            label={t.delete}
+            pending={pending}
+            onClick={onConfirm}
+          />
         </div>
       </div>
     </ModalOverlay>
@@ -88,6 +97,7 @@ function ConfirmDeleteDialog({
 }
 
 export function UniversityTable({ initial }: { initial: University[] }) {
+  const t = useDash();
   const [rows, setRows] = useState(initial);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -108,7 +118,7 @@ export function UniversityTable({ initial }: { initial: University[] }) {
     setDeleteError(null);
     start(async () => {
       const result = await deleteUniversity(deleteId);
-      reportAction(result, "University deleted.");
+      reportAction(result, t.universityDeleted);
       if (result && "error" in result && result.error) {
         setDeleteError(result.error);
         return;
@@ -123,10 +133,10 @@ export function UniversityTable({ initial }: { initial: University[] }) {
         <table className="w-full table-fixed text-left text-sm">
           <thead className="border-b border-border text-muted">
             <tr>
-              <th className="w-[44%] px-4 py-3 font-medium">University</th>
-              <th className="w-[22%] px-4 py-3 font-medium">Status</th>
+              <th className="w-[44%] px-4 py-3 font-medium">{t.university}</th>
+              <th className="w-[22%] px-4 py-3 font-medium">{t.status}</th>
               <th className="w-[34%] px-4 py-3 font-medium text-end">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">{t.actions}</span>
               </th>
             </tr>
           </thead>
@@ -176,6 +186,7 @@ function UniversityRow({
   university: University;
   onRequestDelete: () => void;
 }) {
+  const t = useDash();
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -192,7 +203,7 @@ function UniversityRow({
               type="button"
               className="ui-press ui-btn ui-btn-secondary ui-btn-sm shrink-0"
               onClick={() => setEditing(false)}>
-              Cancel
+              {t.cancel}
             </button>
           </div>
         </td>
@@ -202,15 +213,17 @@ function UniversityRow({
 
   return (
     <tr className="border-b border-border last:border-0">
-      <td className="truncate px-4 py-3 font-bold">{university.name}</td>
+      <td className="truncate px-4 py-3 font-bold">
+        {pickLocale(t.locale, university.name, university.nameAr)}
+      </td>
       <td className="px-4 py-3">
         <StatusPill active={university.isActive} />
       </td>
       <td className="px-4 py-3">
         <div className="flex justify-end gap-1.5">
-          <EditIconButton onClick={() => setEditing(true)} />
+          <EditIconButton label={t.edit} onClick={() => setEditing(true)} />
           <DeleteIconButton
-            label={`Delete ${university.name}`}
+            label={fill(t.deleteName, { name: university.name })}
             onClick={onRequestDelete}
           />
         </div>
