@@ -73,35 +73,6 @@ export default async function LoginPage({
               {messages.navHome}
             </Link>
           </p>
-          <aside className="mt-6 rounded-2xl border border-dashed border-border bg-brand-soft/50 px-4 py-4">
-            <p className="text-sm font-bold">{messages.demoTitle}</p>
-            <dl className="mt-3 space-y-3 text-sm">
-              <div>
-                <dt className="text-muted">{messages.demoAdmin}</dt>
-                <dd className="mt-0.5 break-all font-mono">
-                  admin@admin.com
-                  <span className="mx-2 text-muted">/</span>
-                  admin123
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{messages.demoEmployee}</dt>
-                <dd className="mt-0.5 break-all font-mono">
-                  employee@employee.com
-                  <span className="mx-2 text-muted">/</span>
-                  employee123
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{messages.demoLab}</dt>
-                <dd className="mt-0.5 break-all font-mono">
-                  lab@lab.com
-                  <span className="mx-2 text-muted">/</span>
-                  lab123
-                </dd>
-              </div>
-            </dl>
-          </aside>
         </div>
       </section>
     </main>

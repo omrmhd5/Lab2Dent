@@ -25,6 +25,9 @@ export function BrandMark({
   );
 }
 
+const LIGHT_FULL_LOGO = "/Light%20Full%20Logo.PNG";
+const DARK_FULL_LOGO = "/Dark%20Full%20Logo.png";
+
 export function BrandLockup({
   label,
   slogan,
@@ -34,13 +37,25 @@ export function BrandLockup({
 }) {
   return (
     <div className="flex flex-col items-center gap-5 text-center">
-      <img
-        src="/Full%20Logo.svg?v=3"
-        alt={label}
-        width={280}
-        height={280}
-        className="h-auto w-56 rounded-[1.35rem] bg-[#f9f8f4] sm:w-64"
-      />
+      <div
+        className="relative h-[14rem] w-[24rem] sm:h-[16rem] sm:w-[27rem]"
+        aria-hidden="true">
+        <img
+          src={LIGHT_FULL_LOGO}
+          alt=""
+          width={2000}
+          height={2000}
+          className="absolute inset-0 size-full object-contain object-center dark:hidden scale-[1.42] sm:scale-[1.45]"
+        />
+        <img
+          src={DARK_FULL_LOGO}
+          alt=""
+          width={512}
+          height={512}
+          className="absolute inset-0 hidden size-full object-contain object-center dark:block scale-[0.86] sm:scale-[0.88]"
+        />
+      </div>
+      <span className="sr-only">{label}</span>
       {slogan ? (
         <p className="text-lg font-medium text-muted sm:text-xl">{slogan}</p>
       ) : null}
