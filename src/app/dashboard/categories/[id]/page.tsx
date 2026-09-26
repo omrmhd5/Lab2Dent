@@ -117,6 +117,7 @@ export default async function CategoryDetailPage({
           labelAr: field.labelAr,
           type: field.type,
           required: field.required,
+          priceEgp: field.priceEgp,
         }))}
       />
     </div>

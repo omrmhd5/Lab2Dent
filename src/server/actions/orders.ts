@@ -17,6 +17,7 @@ import {
 import { requireAdminSession, requireStaffSession } from "@/lib/auth";
 import { loadOrderScope } from "@/lib/order-scope";
 import { generateOrderCode } from "@/lib/order-code";
+import { formatEgp } from "@/lib/utils";
 import {
   deleteStoredImages,
   saveCaseImage,
@@ -25,6 +26,8 @@ import {
 import {
   formatCategoryNames,
   isSelectableCategory,
+  sumSelectedPriceFieldAddons,
+  type CategoryFieldDef,
   type CategoryRecord,
 } from "@/lib/categories";
 import {
@@ -34,6 +37,7 @@ import {
 import { pickLocale } from "@/lib/bilingual";
 import { getLocale } from "@/lib/locale";
 import { statusesForRole } from "@/lib/status";
+import { isDigitsOnly } from "@/lib/numeric-input";
 import { isEgyptianMobile, normalizePhone } from "@/lib/utils";
 
 export type CreateCaseState = {
@@ -83,10 +87,7 @@ export async function createCase(
     parent = parentRow ? (parentRow as CategoryRecord) : null;
   }
 
-  const categoryNames = formatCategoryNames(
-    category as CategoryRecord,
-    parent,
-  );
+  const categoryNames = formatCategoryNames(category as CategoryRecord, parent);
   const locale = await getLocale();
 
   const [university] = await db
@@ -111,14 +112,45 @@ export async function createCase(
     fieldId: string;
     label: string;
     labelAr: string | null;
-    type: "text" | "image";
+    type: CategoryFieldDef["type"];
     textValue: string | null;
     imageKey: string | null;
+    priceEgp: number | null;
     sortOrder: number;
   }[] = [];
 
+  const selectedPriceFieldIds = new Set<string>();
+
   for (const field of fields) {
-    if (field.type === "text") {
+    if (field.type === "price") {
+      const selected = formData.get(`field_${field.id}`) === "1";
+      if (field.required && !selected) {
+        return {
+          error:
+            locale === "ar"
+              ? `اختر ${pickLocale(locale, field.label, field.labelAr)}.`
+              : `Select ${field.label}.`,
+        };
+      }
+      if (!selected) continue;
+      if (field.priceEgp === null || field.priceEgp < 0) {
+        return { error: "That add-on is not configured correctly." };
+      }
+      selectedPriceFieldIds.add(field.id);
+      answers.push({
+        fieldId: field.id,
+        label: field.label,
+        labelAr: field.labelAr,
+        type: "price",
+        textValue: formatEgp(field.priceEgp, locale),
+        imageKey: null,
+        priceEgp: field.priceEgp,
+        sortOrder: field.sortOrder,
+      });
+      continue;
+    }
+
+    if (field.type === "text" || field.type === "number") {
       const textValue = String(formData.get(`field_${field.id}`) ?? "").trim();
       if (field.required && !textValue) {
         return {
@@ -129,13 +161,22 @@ export async function createCase(
         };
       }
       if (!textValue) continue;
+      if (field.type === "number" && !isDigitsOnly(textValue)) {
+        return {
+          error:
+            locale === "ar"
+              ? `${pickLocale(locale, field.label, field.labelAr)} يجب أن يحتوي على أرقام فقط.`
+              : `${field.label} must contain numbers only.`,
+        };
+      }
       answers.push({
         fieldId: field.id,
         label: field.label,
         labelAr: field.labelAr,
-        type: "text",
+        type: field.type,
         textValue,
         imageKey: null,
+        priceEgp: null,
         sortOrder: field.sortOrder,
       });
       continue;
@@ -162,6 +203,7 @@ export async function createCase(
         type: "image",
         textValue: null,
         imageKey,
+        priceEgp: null,
         sortOrder: field.sortOrder,
       });
     } catch (error) {
@@ -173,6 +215,20 @@ export async function createCase(
       };
     }
   }
+
+  const fieldDefs: CategoryFieldDef[] = fields.map((field) => ({
+    id: field.id,
+    label: field.label,
+    labelAr: field.labelAr,
+    type: field.type,
+    required: field.required,
+    priceEgp: field.priceEgp,
+  }));
+  const priceAddonEgp = sumSelectedPriceFieldAddons(
+    fieldDefs,
+    selectedPriceFieldIds,
+  );
+  const finalPriceEgp = category.priceEgp! + priceAddonEgp;
 
   let paymentScreenshotKey: string;
 
@@ -213,7 +269,7 @@ export async function createCase(
           categoryId: category.id,
           categoryName: categoryNames.english,
           categoryNameAr: categoryNames.arabic,
-          priceEgp: category.priceEgp!,
+          priceEgp: finalPriceEgp,
           status: "pending",
           paymentScreenshotKey,
         })
@@ -229,6 +285,7 @@ export async function createCase(
             type: answer.type,
             textValue: answer.textValue,
             imageKey: answer.imageKey,
+            priceEgp: answer.priceEgp,
             sortOrder: answer.sortOrder,
           })),
         );

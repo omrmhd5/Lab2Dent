@@ -12,6 +12,8 @@ import { buildPageMetadata } from "@/lib/seo";
 import { getInstapayConfig } from "@/lib/settings";
 import { asc, eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   return buildPageMetadata(locale, "newCase");

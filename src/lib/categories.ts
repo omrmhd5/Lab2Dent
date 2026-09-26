@@ -4,9 +4,9 @@ import type { Locale } from "@/lib/locale";
 export type CategoryRecord = {
   id: string;
   parentId: string | null;
-    name: string;
-    nameAr: string | null;
-    priceEgp: number | null;
+  name: string;
+  nameAr: string | null;
+  priceEgp: number | null;
   costEgp: number | null;
   confirmedOrderCount: number;
   confirmedTotalPriceEgp: number;
@@ -20,9 +20,20 @@ export type CategoryFieldDef = {
   id: string;
   label: string;
   labelAr: string | null;
-  type: "text" | "image";
+  type: "text" | "number" | "image" | "price";
   required: boolean;
+  priceEgp: number | null;
 };
+
+export function sumSelectedPriceFieldAddons(
+  fields: CategoryFieldDef[],
+  selectedFieldIds: Set<string>,
+) {
+  return fields.reduce((total, field) => {
+    if (field.type !== "price" || !selectedFieldIds.has(field.id)) return total;
+    return total + (field.priceEgp ?? 0);
+  }, 0);
+}
 
 export type CategoryGroup = {
   id: string;
@@ -157,8 +168,12 @@ export function localizeGroups(groups: CategoryGroup[], locale: Locale) {
       ...item,
       name: pickLocale(locale, item.name, item.nameAr),
       fields: item.fields.map((field) => ({
-        ...field,
+        id: field.id,
         label: pickLocale(locale, field.label, field.labelAr),
+        labelAr: field.labelAr,
+        type: field.type,
+        required: field.required,
+        priceEgp: field.priceEgp,
       })),
     })),
   }));

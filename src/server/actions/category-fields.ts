@@ -11,9 +11,14 @@ import {
 import { isSelectableCategory, type CategoryRecord } from "@/lib/categories";
 import { readLocalizedPair } from "@/lib/bilingual";
 import { requireAdminSession } from "@/lib/auth";
+import { digitsOnly, isDigitsOnly } from "@/lib/numeric-input";
 import { getLocale } from "@/lib/locale";
 
-function revalidateFields() {
+async function revalidateFields(categoryId: string) {
+  const subcategory = await requireSubcategory(categoryId);
+  if (subcategory?.parentId) {
+    revalidatePath(`/dashboard/categories/${subcategory.parentId}`);
+  }
   revalidatePath("/dashboard/categories", "layout");
   revalidatePath("/new-case");
   revalidatePath("/");
@@ -42,8 +47,34 @@ async function labelsRequired() {
 
 function parseType(value: FormDataEntryValue | null): CategoryFieldType | null {
   const type = String(value ?? "");
-  if (type === "text" || type === "image") return type;
+  if (
+    type === "text" ||
+    type === "number" ||
+    type === "image" ||
+    type === "price"
+  ) {
+    return type;
+  }
   return null;
+}
+
+function parseFieldPriceEgp(
+  value: FormDataEntryValue | null,
+  type: CategoryFieldType,
+) {
+  if (type !== "price") return null;
+  const raw = digitsOnly(String(value ?? "").trim());
+  if (!raw || !isDigitsOnly(raw)) return null;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 0) return null;
+  return parsed;
+}
+
+async function priceRequiredError() {
+  const locale = await getLocale();
+  return locale === "ar"
+    ? "أدخل مبلغ الإضافة بالجنيه."
+    : "Enter the add-on amount in EGP.";
 }
 
 async function nextSortOrder(categoryId: string) {
@@ -78,9 +109,14 @@ export async function createCategoryField(formData: FormData) {
   );
   const type = parseType(formData.get("type"));
   const required = String(formData.get("required") ?? "") === "on";
+  const priceEgp = parseFieldPriceEgp(formData.get("priceEgp"), type ?? "text");
 
   if (!categoryId || !label || !labelAr || !type) {
     return { error: await labelsRequired() };
+  }
+
+  if (type === "price" && priceEgp === null) {
+    return { error: await priceRequiredError() };
   }
 
   const subcategory = await requireSubcategory(categoryId);
@@ -91,11 +127,12 @@ export async function createCategoryField(formData: FormData) {
     label,
     labelAr,
     type,
+    priceEgp,
     required,
     sortOrder: await nextSortOrder(categoryId),
   });
 
-  revalidateFields();
+  await revalidateFields(categoryId);
   return { ok: true as const };
 }
 
@@ -111,9 +148,14 @@ export async function updateCategoryField(formData: FormData) {
   );
   const type = parseType(formData.get("type"));
   const required = String(formData.get("required") ?? "") === "on";
+  const priceEgp = parseFieldPriceEgp(formData.get("priceEgp"), type ?? "text");
 
   if (!id || !categoryId || !label || !labelAr || !type) {
     return { error: await labelsRequired() };
+  }
+
+  if (type === "price" && priceEgp === null) {
+    return { error: await priceRequiredError() };
   }
 
   const subcategory = await requireSubcategory(categoryId);
@@ -121,10 +163,17 @@ export async function updateCategoryField(formData: FormData) {
 
   await db
     .update(categoryFields)
-    .set({ label, labelAr, type, required, updatedAt: new Date() })
+    .set({
+      label,
+      labelAr,
+      type,
+      priceEgp,
+      required,
+      updatedAt: new Date(),
+    })
     .where(eq(categoryFields.id, id));
 
-  revalidateFields();
+  await revalidateFields(categoryId);
   return { ok: true as const };
 }
 
@@ -138,6 +187,6 @@ export async function deleteCategoryField(formData: FormData) {
 
   await db.delete(categoryFields).where(eq(categoryFields.id, id));
 
-  revalidateFields();
+  await revalidateFields(categoryId);
   return { ok: true as const };
 }

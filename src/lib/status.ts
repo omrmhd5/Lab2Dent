@@ -22,7 +22,7 @@ export const STATUS_LABELS: Record<OrderStatus, { en: string; ar: string }> = {
 
 export function statusesForRole(role: StaffRole): OrderStatus[] {
   if (role === "admin") {
-    return ["pending", "confirmed", "rejected"];
+    return ["pending", "confirmed", "rejected", "ready"];
   }
   if (role === "employee") {
     return ["confirmed", "rejected"];

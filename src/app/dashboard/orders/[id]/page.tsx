@@ -43,14 +43,31 @@ export default async function OrderDetailPage({
   if (!order) notFound();
 
   let costEgp: number | null = null;
+  let categoryBasePriceEgp: number | null = null;
   if (order.categoryId) {
     const [category] = await db
-      .select({ costEgp: categories.costEgp })
+      .select({ costEgp: categories.costEgp, priceEgp: categories.priceEgp })
       .from(categories)
       .where(eq(categories.id, order.categoryId))
       .limit(1);
     costEgp = category?.costEgp ?? null;
+    categoryBasePriceEgp = category?.priceEgp ?? null;
   }
+
+  const priceAddOns = [...order.fieldValues]
+    .filter((field) => field.type === "price" && field.priceEgp !== null)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((field) => ({
+      id: field.id,
+      label: pickLocale(locale, field.label, field.labelAr),
+      priceEgp: field.priceEgp!,
+    }));
+
+  const addOnTotalEgp = priceAddOns.reduce(
+    (sum, addOn) => sum + addOn.priceEgp,
+    0,
+  );
+  const basePriceEgp = categoryBasePriceEgp ?? order.priceEgp - addOnTotalEgp;
 
   const events = [...order.events].sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
@@ -102,6 +119,8 @@ export default async function OrderDetailPage({
             order.categoryNameAr,
           )}
           priceEgp={order.priceEgp}
+          basePriceEgp={basePriceEgp}
+          addOns={priceAddOns}
           costEgp={costEgp}
           showPrice={showPrice}
           showMoney={showMoney}
@@ -133,6 +152,7 @@ export default async function OrderDetailPage({
           type: field.type,
           textValue: field.textValue,
           imageKey: field.imageKey,
+          priceEgp: field.priceEgp,
           sortOrder: field.sortOrder,
         }))}
       />

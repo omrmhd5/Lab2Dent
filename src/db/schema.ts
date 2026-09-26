@@ -16,7 +16,9 @@ export const staffRoleEnum = pgEnum("staff_role", ["admin", "employee", "lab"]);
 
 export const categoryFieldTypeEnum = pgEnum("category_field_type", [
   "text",
+  "number",
   "image",
+  "price",
 ]);
 
 export const orderStatusEnum = pgEnum("order_status", [
@@ -155,6 +157,7 @@ export const categoryFields = pgTable(
     labelAr: text("label_ar"),
     type: categoryFieldTypeEnum("type").notNull(),
     required: boolean("required").notNull().default(false),
+    priceEgp: integer("price_egp"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -182,6 +185,7 @@ export const orderFieldValues = pgTable(
     textValue: text("text_value"),
     imageKey: text("image_key"),
     sortOrder: integer("sort_order").notNull().default(0),
+    priceEgp: integer("price_egp"),
   },
   (table) => [index("order_field_values_order_id_idx").on(table.orderId)],
 );

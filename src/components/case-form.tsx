@@ -11,9 +11,15 @@ import type { InstapayConfig } from "@/lib/instapay";
 import { formatInstapayDisplay, instapayOpensInNewTab } from "@/lib/instapay";
 import { SelectMenu } from "@/components/select-menu";
 import { pickLocale } from "@/lib/bilingual";
-import { flattenSelectableItems, type CategoryGroup } from "@/lib/categories";
+import {
+  flattenSelectableItems,
+  sumSelectedPriceFieldAddons,
+  type CategoryFieldDef,
+  type CategoryGroup,
+} from "@/lib/categories";
 import { Spinner } from "@/components/spinner";
 import { toast } from "@/components/toast";
+import { digitsOnly } from "@/lib/numeric-input";
 import { formatEgp } from "@/lib/utils";
 
 type University = { id: string; name: string; nameAr: string | null };
@@ -72,6 +78,9 @@ export function CaseForm({
   );
   const [textValues, setTextValues] = useState<Record<string, string>>({});
   const [fileReady, setFileReady] = useState<Record<string, boolean>>({});
+  const [priceSelections, setPriceSelections] = useState<
+    Record<string, boolean>
+  >({});
 
   const selected = useMemo(
     () => selectableItems.find((item) => item.id === categoryId) ?? null,
@@ -81,6 +90,34 @@ export function CaseForm({
   const selectedUniversity = useMemo(
     () => universities.find((item) => item.id === universityId) ?? null,
     [universities, universityId],
+  );
+
+  const selectedPriceFieldIds = useMemo(
+    () =>
+      new Set(
+        Object.entries(priceSelections)
+          .filter(([, selected]) => selected)
+          .map(([fieldId]) => fieldId),
+      ),
+    [priceSelections],
+  );
+
+  const priceAddonEgp = useMemo(() => {
+    if (!selected) return 0;
+    return sumSelectedPriceFieldAddons(selected.fields, selectedPriceFieldIds);
+  }, [selected, selectedPriceFieldIds]);
+
+  const totalPriceEgp = useMemo(() => {
+    if (!selected) return 0;
+    return selected.priceEgp + priceAddonEgp;
+  }, [selected, priceAddonEgp]);
+
+  const selectedPriceFields = useMemo(
+    () =>
+      selected?.fields.filter(
+        (field) => field.type === "price" && field.priceEgp !== null,
+      ) ?? [],
+    [selected],
   );
 
   const titles = [messages.formYou, messages.formCase, messages.formPay];
@@ -93,12 +130,18 @@ export function CaseForm({
     setCategoryId(group?.items[0]?.id ?? "");
     setTextValues({});
     setFileReady({});
+    setPriceSelections({});
   }
 
   function selectCategory(id: string) {
     setCategoryId(id);
     setTextValues({});
     setFileReady({});
+    setPriceSelections({});
+  }
+
+  function togglePriceField(fieldId: string, selected: boolean) {
+    setPriceSelections((current) => ({ ...current, [fieldId]: selected }));
   }
 
   function canContinue() {
@@ -107,7 +150,10 @@ export function CaseForm({
       if (!groupId || !categoryId || !selected) return false;
       return selected.fields.every((field) => {
         if (!field.required) return true;
-        if (field.type === "text") return Boolean(textValues[field.id]?.trim());
+        if (field.type === "text" || field.type === "number") {
+          return Boolean(textValues[field.id]?.trim());
+        }
+        if (field.type === "price") return Boolean(priceSelections[field.id]);
         return Boolean(fileReady[field.id]);
       });
     }
@@ -233,13 +279,22 @@ export function CaseForm({
 
         {step === 2 && selected ? (
           <>
+            <PriceSummary
+              locale={locale}
+              messages={messages}
+              basePriceEgp={selected.priceEgp}
+              fields={selected.fields}
+              selectedPriceFieldIds={selectedPriceFieldIds}
+              totalPriceEgp={totalPriceEgp}
+              prominent
+            />
             <div className="ui-card space-y-6 bg-brand-soft">
               <div>
                 <p className="text-sm font-bold text-muted">
                   {messages.instapayTitle}
                 </p>
                 <p className="mt-2 font-mono text-4xl font-bold tracking-tight">
-                  {formatEgp(selected.priceEgp, locale)}
+                  {formatEgp(totalPriceEgp, locale)}
                 </p>
               </div>
               <div>
@@ -293,13 +348,27 @@ export function CaseForm({
                 {selected.fields
                   .filter(
                     (field) =>
-                      field.type === "text" && textValues[field.id]?.trim(),
+                      (field.type === "text" || field.type === "number") &&
+                      textValues[field.id]?.trim(),
                   )
                   .map((field) => (
                     <div key={field.id} className="flex justify-between gap-4">
                       <dt className="min-w-0 text-muted">{field.label}</dt>
                       <dd className="min-w-0 break-words text-end font-bold">
                         {textValues[field.id]}
+                      </dd>
+                    </div>
+                  ))}
+                {selected.fields
+                  .filter(
+                    (field) =>
+                      field.type === "price" && priceSelections[field.id],
+                  )
+                  .map((field) => (
+                    <div key={field.id} className="flex justify-between gap-4">
+                      <dt className="min-w-0 text-muted">{field.label}</dt>
+                      <dd className="min-w-0 text-end font-bold">
+                        +{formatEgp(field.priceEgp ?? 0, locale)}
                       </dd>
                     </div>
                   ))}
@@ -322,41 +391,44 @@ export function CaseForm({
         ) : null}
       </motion.div>
 
-      <div className={step === 1 ? "mt-5 space-y-5" : "hidden"}>
-        {selected?.fields.map((field) => (
-          <Field
-            key={`${categoryId}-${field.id}`}
-            label={field.required ? `${field.label} *` : field.label}>
-            {field.type === "text" ? (
-              <input
-                className="ui-input"
-                name={`field_${field.id}`}
-                value={textValues[field.id] ?? ""}
-                onChange={(event) =>
-                  setTextValues((current) => ({
-                    ...current,
-                    [field.id]: event.target.value,
-                  }))
-                }
-              />
-            ) : (
-              <input
-                className="ui-input"
-                type="file"
-                name={`field_${field.id}`}
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  setFileReady((current) => ({
-                    ...current,
-                    [field.id]: Boolean(file && file.size > 0),
-                  }));
-                }}
-              />
-            )}
-          </Field>
-        ))}
-      </div>
+      {step >= 1 && selected ? (
+        <div
+          className={step === 1 ? "mt-5 space-y-5" : "sr-only"}
+          aria-hidden={step !== 1}>
+          <CaseCustomFields
+            fields={selected.fields}
+            categoryId={categoryId}
+            locale={locale}
+            addOnLabel={messages.priceAddOn}
+            textValues={textValues}
+            fileReady={fileReady}
+            priceSelections={priceSelections}
+            onTextChange={(fieldId, value) =>
+              setTextValues((current) => ({
+                ...current,
+                [fieldId]: value,
+              }))
+            }
+            onFileReady={(fieldId, ready) =>
+              setFileReady((current) => ({
+                ...current,
+                [fieldId]: ready,
+              }))
+            }
+            onPriceToggle={togglePriceField}
+          />
+          {step === 1 && selectedPriceFields.length > 0 ? (
+            <PriceSummary
+              locale={locale}
+              messages={messages}
+              basePriceEgp={selected.priceEgp}
+              fields={selected.fields}
+              selectedPriceFieldIds={selectedPriceFieldIds}
+              totalPriceEgp={totalPriceEgp}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       {state.error ? (
         <p className="mt-4 text-sm font-bold text-danger" role="alert">
@@ -408,6 +480,206 @@ function Field({
     <div className="block space-y-2">
       <span className="text-sm font-bold">{label}</span>
       {children}
+    </div>
+  );
+}
+
+function CaseCustomFields({
+  fields,
+  categoryId,
+  locale,
+  addOnLabel,
+  textValues,
+  fileReady,
+  priceSelections,
+  onTextChange,
+  onFileReady,
+  onPriceToggle,
+}: {
+  fields: CategoryFieldDef[];
+  categoryId: string;
+  locale: "en" | "ar";
+  addOnLabel: string;
+  textValues: Record<string, string>;
+  fileReady: Record<string, boolean>;
+  priceSelections: Record<string, boolean>;
+  onTextChange: (fieldId: string, value: string) => void;
+  onFileReady: (fieldId: string, ready: boolean) => void;
+  onPriceToggle: (fieldId: string, selected: boolean) => void;
+}) {
+  const standardFields = fields.filter((field) => field.type !== "price");
+  const addOnFields = fields.filter(
+    (field) => field.type === "price" && field.priceEgp !== null,
+  );
+
+  if (standardFields.length === 0 && addOnFields.length === 0) return null;
+
+  return (
+    <div className="space-y-5 border-t border-border pt-5">
+      {standardFields.map((field) => (
+        <Field
+          key={`${categoryId}-${field.id}`}
+          label={field.required ? `${field.label} *` : field.label}>
+          {field.type === "text" ? (
+            <input
+              className="ui-input"
+              name={`field_${field.id}`}
+              value={textValues[field.id] ?? ""}
+              onChange={(event) => onTextChange(field.id, event.target.value)}
+            />
+          ) : field.type === "number" ? (
+            <input
+              className="ui-input ui-input-numeric"
+              name={`field_${field.id}`}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={textValues[field.id] ?? ""}
+              onChange={(event) =>
+                onTextChange(field.id, digitsOnly(event.target.value))
+              }
+            />
+          ) : (
+            <input
+              className="ui-input"
+              type="file"
+              name={`field_${field.id}`}
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                onFileReady(field.id, Boolean(file && file.size > 0));
+              }}
+            />
+          )}
+        </Field>
+      ))}
+
+      {addOnFields.length > 0 ? (
+        <div className="space-y-5">
+          <div
+            className={
+              standardFields.length > 0
+                ? "flex items-center gap-3 border-t border-border pt-5"
+                : "flex items-center gap-3"
+            }
+            role="separator"
+            aria-label={addOnLabel}>
+            <div className="h-px min-w-0 flex-1 bg-border" aria-hidden="true" />
+            <span className="shrink-0 text-sm font-bold text-muted">
+              {addOnLabel}
+            </span>
+            <div className="h-px min-w-0 flex-1 bg-border" aria-hidden="true" />
+          </div>
+          {addOnFields.map((field) => (
+            <PriceFieldToggle
+              key={`${categoryId}-${field.id}`}
+              fieldId={field.id}
+              label={field.required ? `${field.label} *` : field.label}
+              amount={field.priceEgp!}
+              locale={locale}
+              selected={Boolean(priceSelections[field.id])}
+              onChange={onPriceToggle}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PriceSummary({
+  locale,
+  messages,
+  basePriceEgp,
+  fields,
+  selectedPriceFieldIds,
+  totalPriceEgp,
+  prominent = false,
+}: {
+  locale: "en" | "ar";
+  messages: Messages;
+  basePriceEgp: number;
+  fields: CategoryFieldDef[];
+  selectedPriceFieldIds: Set<string>;
+  totalPriceEgp: number;
+  prominent?: boolean;
+}) {
+  const addOns = fields.filter(
+    (field) => field.type === "price" && selectedPriceFieldIds.has(field.id),
+  );
+
+  return (
+    <div
+      className={`rounded-2xl border border-border px-4 py-3 ${
+        prominent ? "bg-brand-soft" : "bg-surface"
+      }`}>
+      <dl className="space-y-2 text-sm">
+        <div className="flex items-center justify-between gap-4">
+          <dt className="text-muted">{messages.basePrice}</dt>
+          <dd className="font-mono font-bold">
+            {formatEgp(basePriceEgp, locale)}
+          </dd>
+        </div>
+        {addOns.map((field) => (
+          <div
+            key={field.id}
+            className="flex items-center justify-between gap-4">
+            <dt className="min-w-0 text-muted">{field.label}</dt>
+            <dd className="shrink-0 font-mono font-bold text-accent">
+              +{formatEgp(field.priceEgp ?? 0, locale)}
+            </dd>
+          </div>
+        ))}
+        <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
+          <dt className="font-bold">{messages.totalPrice}</dt>
+          <dd className="font-mono text-lg font-bold">
+            {formatEgp(totalPriceEgp, locale)}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function PriceFieldToggle({
+  fieldId,
+  label,
+  amount,
+  locale,
+  selected,
+  onChange,
+}: {
+  fieldId: string;
+  label: string;
+  amount: number;
+  locale: "en" | "ar";
+  selected: boolean;
+  onChange: (fieldId: string, next: boolean) => void;
+}) {
+  return (
+    <div>
+      <label
+        className={`ui-press flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+          selected
+            ? "border-accent bg-accent-soft text-foreground shadow-[inset_0_0_0_1px_var(--accent)]"
+            : "border-border bg-surface text-muted hover:border-brand/35"
+        }`}>
+        <span className="min-w-0 flex-1 text-start text-sm font-bold">
+          {label}
+        </span>
+        <span className="shrink-0 font-mono text-sm font-bold text-accent">
+          +{formatEgp(amount, locale)}
+        </span>
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={selected}
+          onChange={(event) => onChange(fieldId, event.target.checked)}
+        />
+      </label>
+      {selected ? (
+        <input type="hidden" name={`field_${fieldId}`} value="1" />
+      ) : null}
     </div>
   );
 }

@@ -30,6 +30,7 @@ type FieldRow = {
   labelAr: string | null;
   type: CategoryFieldType;
   required: boolean;
+  priceEgp: number | null;
 };
 
 type DeleteTarget = {
@@ -325,6 +326,7 @@ function SubcategoryCard({
                 labelAr: field.labelAr,
                 type: field.type,
                 required: field.required,
+                priceEgp: field.priceEgp,
               }))}
             />
           </div>

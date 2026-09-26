@@ -319,6 +319,21 @@ html[dir="rtl"] body {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent);
 }
 
+.ui-input-numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="number"].ui-input::-webkit-outer-spin-button,
+input[type="number"].ui-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"].ui-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
 .ui-input.ui-input-grow {
   width: auto;
   min-width: 0;

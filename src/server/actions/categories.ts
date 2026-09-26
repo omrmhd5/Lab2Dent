@@ -67,6 +67,7 @@ export async function listPublicCategoryGroups() {
       label: categoryFields.label,
       labelAr: categoryFields.labelAr,
       type: categoryFields.type,
+      priceEgp: categoryFields.priceEgp,
       required: categoryFields.required,
       sortOrder: categoryFields.sortOrder,
     })
@@ -82,6 +83,7 @@ export async function listPublicCategoryGroups() {
       labelAr: field.labelAr,
       type: field.type,
       required: field.required,
+      priceEgp: field.priceEgp,
     });
     fieldsByCategory.set(field.categoryId, list);
   }

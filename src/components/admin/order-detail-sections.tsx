@@ -53,18 +53,24 @@ export async function OrderStudentCard({
 export async function OrderWorkCard({
   categoryName,
   priceEgp,
+  basePriceEgp,
+  addOns,
   costEgp,
   showPrice,
   showMoney,
 }: {
   categoryName: string;
   priceEgp: number;
+  basePriceEgp: number;
+  addOns: { id: string; label: string; priceEgp: number }[];
   costEgp: number | null;
   showPrice: boolean;
   showMoney: boolean;
 }) {
-  const t = getDash(await getLocale());
+  const locale = await getLocale();
+  const t = getDash(locale);
   const profit = costEgp === null ? null : priceEgp - costEgp;
+  const hasBreakdown = addOns.length > 0;
 
   return (
     <section className="ui-card h-full">
@@ -72,19 +78,53 @@ export async function OrderWorkCard({
       <dl className="mt-2 divide-y divide-border">
         <DetailRow label={t.service} value={categoryName} />
         {showPrice ? (
-          <DetailRow label={t.price} value={formatEgp(priceEgp)} mono />
+          hasBreakdown ? (
+            <div className="py-3">
+              <p className="text-sm font-bold">{t.price}</p>
+              <dl className="mt-2 space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-muted">{t.basePrice}</dt>
+                  <dd className="font-mono font-bold">
+                    {formatEgp(basePriceEgp, locale)}
+                  </dd>
+                </div>
+                {addOns.map((addOn) => (
+                  <div
+                    key={addOn.id}
+                    className="flex items-center justify-between gap-4">
+                    <dt className="min-w-0 text-muted">{addOn.label}</dt>
+                    <dd className="shrink-0 font-mono font-bold">
+                      +{formatEgp(addOn.priceEgp, locale)}
+                    </dd>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
+                  <dt className="font-bold">{t.total}</dt>
+                  <dd className="font-mono font-bold">
+                    {formatEgp(priceEgp, locale)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          ) : (
+            <DetailRow
+              label={t.price}
+              value={formatEgp(priceEgp, locale)}
+              mono
+            />
+          )
         ) : null}
         {showMoney ? (
           <DetailRow
             label={t.cost}
-            value={costEgp === null ? "—" : formatEgp(costEgp)}
+            value={costEgp === null ? "—" : formatEgp(costEgp, locale)}
             mono
           />
         ) : null}
         {showMoney ? (
           <DetailRow
             label={t.profit}
-            value={profit === null ? "—" : formatEgp(profit)}
+            value={profit === null ? "—" : formatEgp(profit, locale)}
             mono
           />
         ) : null}
@@ -131,9 +171,10 @@ export async function OrderCaseDetailsCard({
   fields: {
     id: string;
     label: string;
-    type: "text" | "image";
+    type: "text" | "number" | "image" | "price";
     textValue: string | null;
     imageKey: string | null;
+    priceEgp: number | null;
     sortOrder: number;
   }[];
 }) {
@@ -165,7 +206,16 @@ export async function OrderCaseDetailsCard({
         ) : null}
 
         {sortedFields.map((field) =>
-          field.type === "image" && field.imageKey ? (
+          field.type === "price" && field.priceEgp !== null ? (
+            <div
+              key={field.id}
+              className="rounded-2xl border border-border px-4 py-3">
+              <p className="text-sm text-muted">{field.label}</p>
+              <p className="mt-1 font-mono text-sm font-bold">
+                +{formatEgp(field.priceEgp)}
+              </p>
+            </div>
+          ) : field.type === "image" && field.imageKey ? (
             <div
               key={field.id}
               className="overflow-hidden rounded-2xl border border-border">
@@ -179,7 +229,8 @@ export async function OrderCaseDetailsCard({
                 className="max-h-80 w-full bg-surface object-contain"
               />
             </div>
-          ) : field.textValue?.trim() ? (
+          ) : (field.type === "text" || field.type === "number") &&
+            field.textValue?.trim() ? (
             <div
               key={field.id}
               className="rounded-2xl border border-border px-4 py-3">
