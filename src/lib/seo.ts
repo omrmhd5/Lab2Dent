@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/locale";
 import { fillSeo, seoCopy, type SeoPageKey } from "@/i18n/seo";
+import { buildSocialImages } from "@/lib/og-image";
 
 export const SITE_NAME = "Lab2Dent";
 
 export function getSiteUrl() {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL;
   if (fromEnv) return fromEnv.replace(/\/$/, "");
+
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (production) return `https://${production.replace(/\/$/, "")}`;
+
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 }
@@ -40,6 +45,7 @@ export function buildPageMetadata(
   const keywords = options.keywords ?? pageCopy.keywords;
   const noIndex = options.noIndex ?? pageCopy.noIndex ?? false;
   const url = `${siteUrl}${path}`;
+  const social = buildSocialImages(seoCopy[locale].default.ogImageAlt);
 
   const metadata: Metadata = {
     title: page === "home" ? { absolute: title } : title,
@@ -56,11 +62,13 @@ export function buildPageMetadata(
       siteName: SITE_NAME,
       title,
       description,
+      ...social.openGraph,
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: social.twitter.images,
     },
   };
 
@@ -77,6 +85,7 @@ export function buildPageMetadata(
 
 export function buildRootMetadata(locale: Locale): Metadata {
   const copy = seoCopy[locale].default;
+  const social = buildSocialImages(copy.ogImageAlt);
 
   return {
     metadataBase: new URL(getSiteUrl()),
@@ -101,11 +110,13 @@ export function buildRootMetadata(locale: Locale): Metadata {
       siteName: SITE_NAME,
       title: copy.title,
       description: copy.description,
+      ...social.openGraph,
     },
     twitter: {
       card: "summary_large_image",
       title: copy.title,
       description: copy.description,
+      images: social.twitter.images,
     },
     robots: {
       index: true,
@@ -122,9 +133,6 @@ export function buildRootMetadata(locale: Locale): Metadata {
       icon: "/Logo.svg",
       apple: "/Logo.svg",
       shortcut: "/Logo.svg",
-    },
-    other: {
-      "og:image:alt": copy.ogImageAlt,
     },
   };
 }
