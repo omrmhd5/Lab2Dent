@@ -25,8 +25,8 @@ export default async function Image() {
         alignItems: "center",
         gap: 36,
         background:
-          "linear-gradient(145deg, #0d274c 0%, #133563 52%, #1a4a86 100%)",
-        color: "#f9f8f4",
+          "linear-gradient(180deg, #ffffff 0%, #f9f8f4 55%, #e7edf6 100%)",
+        color: "#133563",
         padding: 64,
         textAlign: "center",
       }}>
@@ -50,7 +50,7 @@ export default async function Image() {
       <div
         style={{
           fontSize: 26,
-          color: "#d7e2f2",
+          color: "#5c6d88",
           maxWidth: 860,
           lineHeight: 1.35,
         }}>
