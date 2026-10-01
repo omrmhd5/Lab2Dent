@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🦷 Lab2Dent — Dental Case Coordination
 
-## Getting Started
+A dental case coordination platform built for **Lab2Dent** to replace manual campus-to-lab handoffs with a single online flow for Egyptian dental students. Students register their university and work type, pay via Instapay with a receipt upload, and receive a tracking code; desk staff confirm cases, assign them to the lab, and advance status while lab staff work assigned orders from a dedicated view.
 
-First, run the development server:
+The platform **digitized case intake and Instapay proof in one submission**, gave every student **one tracking code instead of fragmented follow-ups**, and centralized **desk-to-lab status, assignment, and category revenue tracking** in role-based dashboards.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 📝 Student Registration & Tracking
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Register a case with no student account — name, phone, and university only
+- Multi-step flow: case details, listed pricing with optional add-ons, Instapay transfer, and receipt upload
+- Tracking code lookup with live status and order history
+- Public service catalog and pricing on the homepage
 
-## Learn More
+### 📋 Staff Dashboard
 
-To learn more about Next.js, take a look at the following resources:
+- Role-based access: **admin**, **employee** (desk), and **lab**
+- Orders table with search, status filter, and university filter
+- Status workflow from pending through delivered or rejected
+- Assign cases to lab staff; order detail with payment proof and custom field values
+- Excel export for desk records
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 🗂️ Catalog, Team & Settings
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Nested service categories with custom fields (text, number, image, price add-ons)
+- Universities management for student selection
+- Staff CRUD with role and scope controls
+- Instapay link configuration for student payments
+- Category analytics: confirmed orders, revenue, cost, and profit totals
 
-## Deploy on Vercel
+### 🌍 Multilingual Experience
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Full English and Arabic UI with RTL / LTR layout
+- Language toggle on public pages and in the staff shell
+- Localized validation, errors, and status labels
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 🎨 UI / UX
+
+- Dark / light theme with saved preference
+- Fully responsive layouts for student and staff flows
+- Motion-driven page transitions and step-by-step case registration
+
+---
+
+## 💡 Impact
+
+- Replaced informal case handoffs with a structured register → pay → track workflow and a single case code per submission
+- Attached Instapay payment proof to every case so the desk can confirm before sending work to the lab
+- Centralized order status, lab assignment, and exports for admin, desk, and lab roles in one dashboard
+- Gave the desk category-level order, revenue, cost, and profit totals for confirmed work
+
+---
+
+## 📦 Tech Stack
+
+| Layer      | Tech                                       |
+| ---------- | ------------------------------------------ |
+| Framework  | Next.js 16, React 19, TypeScript           |
+| i18n       | Custom EN/AR message catalogs              |
+| Database   | PostgreSQL, Drizzle ORM                    |
+| Auth       | iron-session, bcryptjs                     |
+| Storage    | Vercel Blob (payment screenshots, uploads) |
+| Export     | ExcelJS                                    |
+| Styling    | Tailwind CSS 4, Motion                     |
+| Deployment | Vercel + PostgreSQL                        |
+
+---
+
+## 🌐 Deployment Notes
+
+- Fully responsive student registration, tracking, and staff dashboard flows
+- PostgreSQL with Drizzle ORM; Vercel Blob for payment screenshots and image field uploads
+- Role-based session auth for admin, desk, and lab staff
+- Serverless-friendly Postgres connection reuse on Vercel
+
+---
+
+## 🎬 Site Demo
+
+<!-- Media capture pending — add after screenshot and video gates -->
+
+**Site tour video coming soon** — `./docs/lab2dent-demo.mp4`
+
+---
+
+## 📸 Screenshots
+
+<!-- Media capture pending — add 2-column table after screenshot gate -->
+
+_Screenshots coming soon — `docs/screenshots/`_
+
+---
+
+## Live Demo 🚀
+
+[**View Live Demo**](https://lab2dent-demo.vercel.app)
+
+| Role     | Email                 | Password    |
+| -------- | --------------------- | ----------- |
+| Admin    | admin@admin.com       | admin123    |
+| Employee | employee@employee.com | employee123 |
+| Lab      | lab@lab.com           | lab123      |
+
+Students open **Register a case** from the homepage — no login. Use the tracking code after submission to follow status.
+
+---
+
+## Author
+
+👤 **Omar Mahmoud**
+📧 [omrmhd54@gmail.com](mailto:omrmhd54@gmail.com)
+💼 [LinkedIn](https://www.linkedin.com/in/omrmhd5/)
+🌐 [Portfolio](https://omarmahmoud.dev/)
+🔗 [GitHub](https://github.com/omrmhd5)
