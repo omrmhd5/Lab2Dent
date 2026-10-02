@@ -58,7 +58,7 @@ function parseType(value: FormDataEntryValue | null): CategoryFieldType | null {
   return null;
 }
 
-function parseFieldPriceEgp(
+function parseFieldAmountEgp(
   value: FormDataEntryValue | null,
   type: CategoryFieldType,
 ) {
@@ -74,7 +74,14 @@ async function priceRequiredError() {
   const locale = await getLocale();
   return locale === "ar"
     ? "أدخل مبلغ الإضافة بالجنيه."
-    : "Enter the add-on amount in EGP.";
+    : "Enter the add-on price in EGP.";
+}
+
+async function costRequiredError() {
+  const locale = await getLocale();
+  return locale === "ar"
+    ? "أدخل تكلفة الإضافة بالجنيه."
+    : "Enter the add-on cost in EGP.";
 }
 
 async function nextSortOrder(categoryId: string) {
@@ -109,7 +116,11 @@ export async function createCategoryField(formData: FormData) {
   );
   const type = parseType(formData.get("type"));
   const required = String(formData.get("required") ?? "") === "on";
-  const priceEgp = parseFieldPriceEgp(formData.get("priceEgp"), type ?? "text");
+  const priceEgp = parseFieldAmountEgp(
+    formData.get("priceEgp"),
+    type ?? "text",
+  );
+  const costEgp = parseFieldAmountEgp(formData.get("costEgp"), type ?? "text");
 
   if (!categoryId || !label || !labelAr || !type) {
     return { error: await labelsRequired() };
@@ -117,6 +128,10 @@ export async function createCategoryField(formData: FormData) {
 
   if (type === "price" && priceEgp === null) {
     return { error: await priceRequiredError() };
+  }
+
+  if (type === "price" && costEgp === null) {
+    return { error: await costRequiredError() };
   }
 
   const subcategory = await requireSubcategory(categoryId);
@@ -128,6 +143,7 @@ export async function createCategoryField(formData: FormData) {
     labelAr,
     type,
     priceEgp,
+    costEgp,
     required,
     sortOrder: await nextSortOrder(categoryId),
   });
@@ -148,7 +164,11 @@ export async function updateCategoryField(formData: FormData) {
   );
   const type = parseType(formData.get("type"));
   const required = String(formData.get("required") ?? "") === "on";
-  const priceEgp = parseFieldPriceEgp(formData.get("priceEgp"), type ?? "text");
+  const priceEgp = parseFieldAmountEgp(
+    formData.get("priceEgp"),
+    type ?? "text",
+  );
+  const costEgp = parseFieldAmountEgp(formData.get("costEgp"), type ?? "text");
 
   if (!id || !categoryId || !label || !labelAr || !type) {
     return { error: await labelsRequired() };
@@ -156,6 +176,10 @@ export async function updateCategoryField(formData: FormData) {
 
   if (type === "price" && priceEgp === null) {
     return { error: await priceRequiredError() };
+  }
+
+  if (type === "price" && costEgp === null) {
+    return { error: await costRequiredError() };
   }
 
   const subcategory = await requireSubcategory(categoryId);
@@ -168,6 +192,7 @@ export async function updateCategoryField(formData: FormData) {
       labelAr,
       type,
       priceEgp,
+      costEgp,
       required,
       updatedAt: new Date(),
     })

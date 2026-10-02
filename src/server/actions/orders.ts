@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
@@ -116,6 +116,7 @@ export async function createCase(
     textValue: string | null;
     imageKey: string | null;
     priceEgp: number | null;
+    costEgp: number | null;
     sortOrder: number;
   }[] = [];
 
@@ -133,7 +134,12 @@ export async function createCase(
         };
       }
       if (!selected) continue;
-      if (field.priceEgp === null || field.priceEgp < 0) {
+      if (
+        field.priceEgp === null ||
+        field.priceEgp < 0 ||
+        field.costEgp === null ||
+        field.costEgp < 0
+      ) {
         return { error: "That add-on is not configured correctly." };
       }
       selectedPriceFieldIds.add(field.id);
@@ -145,6 +151,7 @@ export async function createCase(
         textValue: formatEgp(field.priceEgp, locale),
         imageKey: null,
         priceEgp: field.priceEgp,
+        costEgp: field.costEgp,
         sortOrder: field.sortOrder,
       });
       continue;
@@ -177,6 +184,7 @@ export async function createCase(
         textValue,
         imageKey: null,
         priceEgp: null,
+        costEgp: null,
         sortOrder: field.sortOrder,
       });
       continue;
@@ -204,6 +212,7 @@ export async function createCase(
         textValue: null,
         imageKey,
         priceEgp: null,
+        costEgp: null,
         sortOrder: field.sortOrder,
       });
     } catch (error) {
@@ -223,6 +232,7 @@ export async function createCase(
     type: field.type,
     required: field.required,
     priceEgp: field.priceEgp,
+    costEgp: field.costEgp,
   }));
   const priceAddonEgp = sumSelectedPriceFieldAddons(
     fieldDefs,
@@ -286,6 +296,7 @@ export async function createCase(
             textValue: answer.textValue,
             imageKey: answer.imageKey,
             priceEgp: answer.priceEgp,
+            costEgp: answer.costEgp,
             sortOrder: answer.sortOrder,
           })),
         );
@@ -569,7 +580,15 @@ export async function listOrders(filters: {
       categoryNameAr: orders.categoryNameAr,
       studentUniversityAr: orders.studentUniversityAr,
       priceEgp: orders.priceEgp,
-      costEgp: categories.costEgp,
+      costEgp: sql<number | null>`CASE
+        WHEN ${categories.costEgp} IS NULL THEN NULL
+        ELSE ${categories.costEgp} + COALESCE((
+          SELECT SUM(${orderFieldValues.costEgp})
+          FROM ${orderFieldValues}
+          WHERE ${orderFieldValues.orderId} = ${orders.id}
+            AND ${orderFieldValues.type} = 'price'
+        ), 0)
+      END`.as("cost_egp"),
       status: orders.status,
       assignedLabName: assignedLab.name,
       createdAt: orders.createdAt,

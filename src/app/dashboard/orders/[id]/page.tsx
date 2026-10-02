@@ -42,7 +42,7 @@ export default async function OrderDetailPage({
 
   if (!order) notFound();
 
-  let costEgp: number | null = null;
+  let categoryBaseCostEgp: number | null = null;
   let categoryBasePriceEgp: number | null = null;
   if (order.categoryId) {
     const [category] = await db
@@ -50,7 +50,7 @@ export default async function OrderDetailPage({
       .from(categories)
       .where(eq(categories.id, order.categoryId))
       .limit(1);
-    costEgp = category?.costEgp ?? null;
+    categoryBaseCostEgp = category?.costEgp ?? null;
     categoryBasePriceEgp = category?.priceEgp ?? null;
   }
 
@@ -61,13 +61,21 @@ export default async function OrderDetailPage({
       id: field.id,
       label: pickLocale(locale, field.label, field.labelAr),
       priceEgp: field.priceEgp!,
+      costEgp: field.costEgp ?? 0,
     }));
 
-  const addOnTotalEgp = priceAddOns.reduce(
+  const addOnPriceTotalEgp = priceAddOns.reduce(
     (sum, addOn) => sum + addOn.priceEgp,
     0,
   );
-  const basePriceEgp = categoryBasePriceEgp ?? order.priceEgp - addOnTotalEgp;
+  const addOnCostTotalEgp = priceAddOns.reduce(
+    (sum, addOn) => sum + addOn.costEgp,
+    0,
+  );
+  const basePriceEgp =
+    categoryBasePriceEgp ?? order.priceEgp - addOnPriceTotalEgp;
+  const baseCostEgp = categoryBaseCostEgp;
+  const costEgp = baseCostEgp === null ? null : baseCostEgp + addOnCostTotalEgp;
 
   const events = [...order.events].sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
@@ -121,6 +129,7 @@ export default async function OrderDetailPage({
           priceEgp={order.priceEgp}
           basePriceEgp={basePriceEgp}
           addOns={priceAddOns}
+          baseCostEgp={baseCostEgp}
           costEgp={costEgp}
           showPrice={showPrice}
           showMoney={showMoney}

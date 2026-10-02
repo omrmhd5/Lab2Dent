@@ -158,6 +158,7 @@ export const categoryFields = pgTable(
     type: categoryFieldTypeEnum("type").notNull(),
     required: boolean("required").notNull().default(false),
     priceEgp: integer("price_egp"),
+    costEgp: integer("cost_egp"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -186,6 +187,7 @@ export const orderFieldValues = pgTable(
     imageKey: text("image_key"),
     sortOrder: integer("sort_order").notNull().default(0),
     priceEgp: integer("price_egp"),
+    costEgp: integer("cost_egp"),
   },
   (table) => [index("order_field_values_order_id_idx").on(table.orderId)],
 );

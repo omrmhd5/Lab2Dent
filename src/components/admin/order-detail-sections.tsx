@@ -55,6 +55,7 @@ export async function OrderWorkCard({
   priceEgp,
   basePriceEgp,
   addOns,
+  baseCostEgp,
   costEgp,
   showPrice,
   showMoney,
@@ -62,7 +63,8 @@ export async function OrderWorkCard({
   categoryName: string;
   priceEgp: number;
   basePriceEgp: number;
-  addOns: { id: string; label: string; priceEgp: number }[];
+  addOns: { id: string; label: string; priceEgp: number; costEgp: number }[];
+  baseCostEgp: number | null;
   costEgp: number | null;
   showPrice: boolean;
   showMoney: boolean;
@@ -70,7 +72,9 @@ export async function OrderWorkCard({
   const locale = await getLocale();
   const t = getDash(locale);
   const profit = costEgp === null ? null : priceEgp - costEgp;
-  const hasBreakdown = addOns.length > 0;
+  const hasPriceBreakdown = addOns.length > 0;
+  const hasCostBreakdown =
+    addOns.length > 0 && baseCostEgp !== null && costEgp !== null;
 
   return (
     <section className="ui-card h-full">
@@ -78,7 +82,7 @@ export async function OrderWorkCard({
       <dl className="mt-2 divide-y divide-border">
         <DetailRow label={t.service} value={categoryName} />
         {showPrice ? (
-          hasBreakdown ? (
+          hasPriceBreakdown ? (
             <div className="py-3">
               <p className="text-sm font-bold">{t.price}</p>
               <dl className="mt-2 space-y-2 text-sm">
@@ -115,11 +119,41 @@ export async function OrderWorkCard({
           )
         ) : null}
         {showMoney ? (
-          <DetailRow
-            label={t.cost}
-            value={costEgp === null ? "—" : formatEgp(costEgp, locale)}
-            mono
-          />
+          hasCostBreakdown ? (
+            <div className="py-3">
+              <p className="text-sm font-bold">{t.cost}</p>
+              <dl className="mt-2 space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-muted">{t.baseCost}</dt>
+                  <dd className="font-mono font-bold">
+                    {formatEgp(baseCostEgp!, locale)}
+                  </dd>
+                </div>
+                {addOns.map((addOn) => (
+                  <div
+                    key={`${addOn.id}-cost`}
+                    className="flex items-center justify-between gap-4">
+                    <dt className="min-w-0 text-muted">{addOn.label}</dt>
+                    <dd className="shrink-0 font-mono font-bold">
+                      +{formatEgp(addOn.costEgp, locale)}
+                    </dd>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
+                  <dt className="font-bold">{t.total}</dt>
+                  <dd className="font-mono font-bold">
+                    {formatEgp(costEgp!, locale)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          ) : (
+            <DetailRow
+              label={t.cost}
+              value={costEgp === null ? "—" : formatEgp(costEgp, locale)}
+              mono
+            />
+          )
         ) : null}
         {showMoney ? (
           <DetailRow

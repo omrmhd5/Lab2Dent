@@ -23,6 +23,7 @@ export type CategoryFieldDef = {
   type: "text" | "number" | "image" | "price";
   required: boolean;
   priceEgp: number | null;
+  costEgp: number | null;
 };
 
 export function sumSelectedPriceFieldAddons(
@@ -32,6 +33,16 @@ export function sumSelectedPriceFieldAddons(
   return fields.reduce((total, field) => {
     if (field.type !== "price" || !selectedFieldIds.has(field.id)) return total;
     return total + (field.priceEgp ?? 0);
+  }, 0);
+}
+
+export function sumSelectedCostFieldAddons(
+  fields: CategoryFieldDef[],
+  selectedFieldIds: Set<string>,
+) {
+  return fields.reduce((total, field) => {
+    if (field.type !== "price" || !selectedFieldIds.has(field.id)) return total;
+    return total + (field.costEgp ?? 0);
   }, 0);
 }
 
@@ -174,6 +185,7 @@ export function localizeGroups(groups: CategoryGroup[], locale: Locale) {
         type: field.type,
         required: field.required,
         priceEgp: field.priceEgp,
+        costEgp: field.costEgp,
       })),
     })),
   }));

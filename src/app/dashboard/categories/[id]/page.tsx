@@ -118,6 +118,7 @@ export default async function CategoryDetailPage({
           type: field.type,
           required: field.required,
           priceEgp: field.priceEgp,
+          costEgp: field.costEgp,
         }))}
       />
     </div>

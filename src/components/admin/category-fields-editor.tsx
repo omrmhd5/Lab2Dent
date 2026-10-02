@@ -27,6 +27,7 @@ type FieldRow = {
   type: CategoryFieldType;
   required: boolean;
   priceEgp: number | null;
+  costEgp: number | null;
 };
 
 function TypeSelect({
@@ -56,24 +57,27 @@ function TypeSelect({
   );
 }
 
-function PriceAmountInput({
+function AddonAmountInput({
+  name,
+  label,
   defaultValue,
   inputKey,
 }: {
+  name: "priceEgp" | "costEgp";
+  label: string;
   defaultValue?: number | null;
   inputKey?: string;
 }) {
-  const t = useDash();
   return (
     <input
       key={inputKey}
       className="ui-input ui-input-numeric w-full min-w-0 sm:w-[7.5rem] sm:shrink-0"
-      name="priceEgp"
+      name={name}
       type="text"
       inputMode="numeric"
       autoComplete="off"
-      placeholder={t.priceAmount}
-      aria-label={t.priceAmount}
+      placeholder={label}
+      aria-label={label}
       defaultValue={defaultValue ?? ""}
       onChange={(event) => {
         event.currentTarget.value = digitsOnly(event.currentTarget.value);
@@ -96,21 +100,37 @@ function FieldTypeControls({
   type,
   onTypeChange,
   priceEgp,
+  costEgp,
   priceInputKey,
+  costInputKey,
 }: {
   type: CategoryFieldType;
   onTypeChange: (type: CategoryFieldType) => void;
   priceEgp?: number | null;
+  costEgp?: number | null;
   priceInputKey?: string;
+  costInputKey?: string;
 }) {
+  const t = useDash();
+
   return (
     <>
       <TypeSelect value={type} onChange={onTypeChange} />
       {type === "price" ? (
-        <PriceAmountInput
-          defaultValue={priceEgp}
-          inputKey={priceInputKey ?? String(priceEgp ?? "new")}
-        />
+        <>
+          <AddonAmountInput
+            name="priceEgp"
+            label={t.priceAmount}
+            defaultValue={priceEgp}
+            inputKey={priceInputKey ?? String(priceEgp ?? "new-price")}
+          />
+          <AddonAmountInput
+            name="costEgp"
+            label={t.costAmount}
+            defaultValue={costEgp}
+            inputKey={costInputKey ?? String(costEgp ?? "new-cost")}
+          />
+        </>
       ) : null}
     </>
   );
@@ -276,7 +296,9 @@ function FieldEditor({
               type={editType}
               onTypeChange={setEditType}
               priceEgp={field.priceEgp}
-              priceInputKey={`${field.id}-${field.priceEgp ?? "none"}`}
+              costEgp={field.costEgp}
+              priceInputKey={`${field.id}-${field.priceEgp ?? "none"}-price`}
+              costInputKey={`${field.id}-${field.costEgp ?? "none"}-cost`}
             />
             <RequiredCheck defaultChecked={field.required} />
             <button
@@ -303,6 +325,13 @@ function FieldEditor({
           {field.type === "price" && field.priceEgp !== null ? (
             <p className="font-mono text-sm font-bold">
               +{formatEgp(field.priceEgp, t.locale)}
+            </p>
+          ) : null}
+          {field.type === "price" && field.costEgp !== null ? (
+            <p className="text-sm text-muted">
+              {fill(t.costValue, {
+                amount: formatEgp(field.costEgp, t.locale),
+              })}
             </p>
           ) : null}
           <p className="text-sm text-muted">

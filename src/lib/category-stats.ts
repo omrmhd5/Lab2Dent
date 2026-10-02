@@ -1,6 +1,11 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Database } from "@/db";
-import { categories, orders, type OrderStatus } from "@/db/schema";
+import {
+  categories,
+  orderFieldValues,
+  orders,
+  type OrderStatus,
+} from "@/db/schema";
 
 const PAYMENT_CONFIRMED_STATUSES = new Set<OrderStatus>([
   "confirmed",
@@ -51,7 +56,20 @@ async function addOrderToCategoryStats(tx: Database, order: StatsOrder) {
 
   if (!subcategory?.parentId) return;
 
-  const cost = subcategory.costEgp ?? 0;
+  const [addonCostRow] = await tx
+    .select({
+      total: sql<number>`COALESCE(SUM(${orderFieldValues.costEgp}), 0)`,
+    })
+    .from(orderFieldValues)
+    .where(
+      and(
+        eq(orderFieldValues.orderId, order.id),
+        eq(orderFieldValues.type, "price"),
+      ),
+    );
+
+  const addonCostEgp = Number(addonCostRow?.total ?? 0);
+  const cost = (subcategory.costEgp ?? 0) + addonCostEgp;
   const profit = order.priceEgp - cost;
 
   await tx
