@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   // next-intl discovers messages through this alias. The official plugin
   // loads @swc/core, which refuses to start on this machine.
   turbopack: {
