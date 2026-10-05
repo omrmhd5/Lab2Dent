@@ -12,6 +12,7 @@ import {
   universities,
   type StaffRole,
 } from "@/db/schema";
+import { apiError } from "@/i18n/api";
 import { isCategoryGroup } from "@/lib/categories";
 import { applyOrderStatusStatsTransition } from "@/lib/category-stats";
 import { requireAdminSession } from "@/lib/auth";
@@ -73,8 +74,7 @@ async function assignmentFor(
       .from(universities)
       .where(eq(universities.id, universityId))
       .limit(1);
-    if (!university)
-      return { error: "That university was not found." as const };
+    if (!university) return { error: "universityNotFound" as const };
   }
 
   if (categoryId) {
@@ -84,7 +84,7 @@ async function assignmentFor(
       .where(eq(categories.id, categoryId))
       .limit(1);
     if (!category || !isCategoryGroup(category)) {
-      return { error: "Pick a parent category." as const };
+      return { error: "pickParentCategory" as const };
     }
   }
 
@@ -113,7 +113,9 @@ export async function createEmployee(formData: FormData) {
     blankToNull(formData.get("universityId")),
     blankToNull(formData.get("categoryId")),
   );
-  if ("error" in assignment) return { error: assignment.error };
+  if ("error" in assignment && assignment.error) {
+    return { error: await apiError(assignment.error) };
+  }
 
   const [existing] = await db
     .select({ id: staff.id })
@@ -122,7 +124,7 @@ export async function createEmployee(formData: FormData) {
     .limit(1);
 
   if (existing) {
-    return { error: "That email is already in use." };
+    return { error: await apiError("emailInUse") };
   }
 
   await db.insert(staff).values({
@@ -152,7 +154,7 @@ export async function updateEmployee(formData: FormData) {
   const isActive = String(formData.get("isActive") ?? "") === "on";
 
   if (!id || !name || !email || !role) {
-    return { error: "Name, email, and role are required." };
+    return { error: await apiError("staffRequired") };
   }
 
   const [current] = await db
@@ -161,7 +163,7 @@ export async function updateEmployee(formData: FormData) {
     .where(eq(staff.id, id))
     .limit(1);
 
-  if (!current) return { error: "That account was not found." };
+  if (!current) return { error: await apiError("accountNotFound") };
 
   const dropsLastAdmin =
     current.role === "admin" &&
@@ -176,7 +178,7 @@ export async function updateEmployee(formData: FormData) {
 
     if ((admins?.total ?? 0) <= 1) {
       return {
-        error: "Keep at least one active admin. Add another admin first.",
+        error: await apiError("keepActiveAdmin"),
       };
     }
   }
@@ -186,7 +188,9 @@ export async function updateEmployee(formData: FormData) {
     blankToNull(formData.get("universityId")),
     blankToNull(formData.get("categoryId")),
   );
-  if ("error" in assignment) return { error: assignment.error };
+  if ("error" in assignment && assignment.error) {
+    return { error: await apiError(assignment.error) };
+  }
 
   const [other] = await db
     .select({ id: staff.id })
@@ -195,7 +199,7 @@ export async function updateEmployee(formData: FormData) {
     .limit(1);
 
   if (other) {
-    return { error: "That email is already in use." };
+    return { error: await apiError("emailInUse") };
   }
 
   const patch: {
@@ -217,7 +221,7 @@ export async function updateEmployee(formData: FormData) {
 
   if (password) {
     if (password.length < 8) {
-      return { error: "Password must be at least 8 characters." };
+      return { error: await apiError("passwordLength") };
     }
     patch.passwordHash = await bcrypt.hash(password, 12);
   }
@@ -230,10 +234,10 @@ export async function updateEmployee(formData: FormData) {
 export async function deleteEmployee(id: string) {
   const session = await requireAdminSession();
 
-  if (!id) return { error: "Missing staff id." };
+  if (!id) return { error: await apiError("missingStaff") };
 
   if (id === session.staffId) {
-    return { error: "You cannot delete your own account." };
+    return { error: await apiError("cannotDeleteSelf") };
   }
 
   const [member] = await db
@@ -242,7 +246,7 @@ export async function deleteEmployee(id: string) {
     .where(eq(staff.id, id))
     .limit(1);
 
-  if (!member) return { error: "That account was not found." };
+  if (!member) return { error: await apiError("accountNotFound") };
 
   if (member.role === "admin") {
     const [admins] = await db
@@ -251,7 +255,7 @@ export async function deleteEmployee(id: string) {
       .where(eq(staff.role, "admin"));
 
     if ((admins?.total ?? 0) <= 1) {
-      return { error: "Keep at least one admin account." };
+      return { error: await apiError("keepAdminAccount") };
     }
   }
 

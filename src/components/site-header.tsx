@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Messages } from "@/i18n/messages";
+import { DemoBanner } from "@/components/demo-banner";
 import { BrandMark } from "./brand-mark";
 import { LanguageToggle } from "./language-toggle";
 import { ThemeToggle } from "./theme-toggle";
@@ -16,7 +17,9 @@ export function SiteHeader({
       <a href="#main" className="skip-link">
         {messages.skipToContent}
       </a>
-      <header className="sticky top-0 z-20 border-b border-border/80 bg-background/80 backdrop-blur-md">
+      <div id="site-chrome" className="sticky top-0 z-20">
+        <DemoBanner label={messages.demoBanner} />
+        <header className="border-b border-border/80 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 px-4 py-3 sm:px-6 md:h-[72px] md:flex-row md:items-center md:justify-between md:py-0">
           <div className="flex items-center justify-between gap-2">
             <BrandMark label={messages.brand} />
@@ -35,6 +38,11 @@ export function SiteHeader({
               {messages.navTrack}
             </Link>
             <Link
+              href="/login"
+              className="ui-press inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-3 text-sm font-bold text-muted md:flex-none">
+              {messages.navStaff}
+            </Link>
+            <Link
               href="/new-case"
               className="ui-press ui-btn ui-btn-primary flex-1 justify-center md:flex-none">
               {messages.navRegister}
@@ -49,6 +57,7 @@ export function SiteHeader({
           </nav>
         </div>
       </header>
+      </div>
     </>
   );
 }
@@ -70,7 +79,7 @@ export function SiteFooter({ messages }: { messages: Messages }) {
           <Link href="/track" className="ui-press">
             {messages.navTrack}
           </Link>
-          <Link href="/dashboard" className="ui-press">
+          <Link href="/login" className="ui-press">
             {messages.navStaff}
           </Link>
         </div>

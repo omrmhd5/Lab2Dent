@@ -47,7 +47,9 @@ export default async function HomePage() {
     <div className="flex min-h-dvh flex-col">
       <SiteHeader locale={locale} messages={messages} />
       <main id="main">
-        <section className="flex min-h-[calc(100svh-10rem)] items-center justify-center px-4 py-12 sm:px-6 md:min-h-[calc(100svh-4.5rem)] md:py-16">
+        <section
+          id="hero"
+          className="flex min-h-[calc(100svh-10rem)] items-center justify-center px-4 py-12 sm:px-6 md:min-h-[calc(100svh-4.5rem)] md:py-16">
           <div className="flex w-full max-w-md flex-col items-center">
             <Rise spring>
               <BrandLockup label={messages.brand} slogan={messages.slogan} />
@@ -65,11 +67,16 @@ export default async function HomePage() {
                 className="ui-press ui-btn ui-btn-secondary w-full">
                 {messages.navTrack}
               </Link>
+              <Link
+                href="/login"
+                className="ui-press ui-btn ui-btn-secondary w-full sm:col-span-2">
+                {messages.navStaff}
+              </Link>
             </Rise>
           </div>
         </section>
 
-        <section className="border-y border-border">
+        <section id="for-students" className="border-y border-border">
           <div className="mx-auto w-full max-w-[1200px] px-4 py-16 sm:px-6 md:py-20">
             <p className="text-sm font-bold uppercase tracking-[0.14em] text-brand">
               {messages.heroEyebrow}
@@ -126,7 +133,10 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-[1200px] px-4 py-16 sm:px-6 md:py-20">
+        <div id="offer-campus">
+          <section
+            id="offer"
+            className="mx-auto w-full max-w-[1200px] px-4 py-16 sm:px-6 md:py-20">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
             {messages.pricesTitle}
           </h2>
@@ -154,7 +164,7 @@ export default async function HomePage() {
           )}
         </section>
 
-        <section className="border-t border-border bg-brand-soft">
+        <section id="campus" className="border-t border-border bg-brand-soft">
           <div className="mx-auto grid w-full max-w-[1200px] items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-12 md:py-20">
             <div className="md:col-span-6">
               <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
@@ -179,7 +189,8 @@ export default async function HomePage() {
               />
             </div>
           </div>
-        </section>
+          </section>
+        </div>
 
         <section className="bg-brand-solid text-on-brand">
           <div className="mx-auto flex w-full max-w-[1200px] flex-col items-start gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between md:py-20">

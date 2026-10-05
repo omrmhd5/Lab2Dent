@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiError } from "@/i18n/api";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, orders } from "@/db/schema";
@@ -13,12 +14,12 @@ export async function GET(
   const session = await getLiveStaffSession();
 
   if (!session || session.role === "lab") {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new NextResponse(await apiError("unauthorized"), { status: 401 });
   }
 
   const scope = await loadOrderScope(session.staffId);
   if (!scope) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new NextResponse(await apiError("unauthorized"), { status: 401 });
   }
 
   const { id } = await params;
@@ -30,13 +31,13 @@ export async function GET(
     .limit(1);
 
   if (!order) {
-    return new NextResponse("Not found", { status: 404 });
+    return new NextResponse(await apiError("notFound"), { status: 404 });
   }
 
   const file = await readPaymentScreenshot(order.paymentScreenshotKey);
 
   if (!file) {
-    return new NextResponse("Not found", { status: 404 });
+    return new NextResponse(await apiError("notFound"), { status: 404 });
   }
 
   return new NextResponse(new Uint8Array(file.bytes), {

@@ -5,6 +5,8 @@ import {
   Geist_Mono,
   Noto_Sans_Arabic,
 } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { Toaster } from "@/components/toast";
 import { getLocale } from "@/lib/locale";
 import { buildRootMetadata } from "@/lib/seo";
@@ -44,6 +46,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
   const theme = await getTheme();
+  const messages = await getMessages();
 
   return (
     <html
@@ -55,8 +58,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Script id="lab2dent-theme" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
         </Script>
-        {children}
-        <Toaster />
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          <Toaster />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

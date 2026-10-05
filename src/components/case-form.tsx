@@ -161,7 +161,7 @@ export function CaseForm({
   }
 
   return (
-    <form action={action} className="w-full">
+    <form id="case-form" action={action} className="w-full">
       <p className="text-sm font-bold text-brand">
         {messages.stepOf
           .replace("{current}", String(step + 1))

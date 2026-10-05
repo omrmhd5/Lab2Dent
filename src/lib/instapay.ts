@@ -4,19 +4,27 @@ export type InstapayConfig = {
 
 const ALLOWED_PROTOCOLS = ["http:", "https:", "tel:", "mailto:"];
 
-export function normalizeInstapayLink(raw: string) {
+export type InstapayErrorCode =
+  | "instapayRequired"
+  | "instapayProtocol"
+  | "instapayInvalid"
+  | "instapayPhone";
+
+export function normalizeInstapayLink(
+  raw: string,
+): { link: string } | { error: InstapayErrorCode } {
   const value = raw.trim();
-  if (!value) return { error: "Instapay link is required." as const };
+  if (!value) return { error: "instapayRequired" };
 
   if (ALLOWED_PROTOCOLS.some((protocol) => value.startsWith(protocol))) {
     try {
       const url = new URL(value);
       if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {
-        return { error: "Use an http(s), tel, or mailto link." as const };
+        return { error: "instapayProtocol" };
       }
       return { link: value };
     } catch {
-      return { error: "Enter a valid Instapay link." as const };
+      return { error: "instapayInvalid" };
     }
   }
 
@@ -25,7 +33,7 @@ export function normalizeInstapayLink(raw: string) {
     return { link: `tel:${digits}` };
   }
 
-  return { error: "Enter a full URL or a phone number for Instapay." as const };
+  return { error: "instapayPhone" };
 }
 
 export function formatInstapayDisplay(link: string) {

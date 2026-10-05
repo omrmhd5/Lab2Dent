@@ -17,6 +17,7 @@ import {
   type CategoryFieldDef,
   type CategoryRecord,
 } from "@/lib/categories";
+import { apiError } from "@/i18n/api";
 import { readLocalizedPair } from "@/lib/bilingual";
 import { requireAdminSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale";
@@ -24,10 +25,7 @@ import { removeOrdersFromCategoryStats } from "@/lib/category-stats";
 import { deleteStoredImages } from "@/lib/storage";
 
 async function namesRequired() {
-  const locale = await getLocale();
-  return locale === "ar"
-    ? "الاسم بالإنجليزية والعربية مطلوب."
-    : "English and Arabic names are required.";
+  return apiError("namesRequired");
 }
 
 function toRecord(row: typeof categories.$inferSelect): CategoryRecord {
@@ -172,7 +170,7 @@ export async function createSubcategory(formData: FormData) {
     .limit(1);
 
   if (!parent || !isCategoryGroup(toRecord(parent))) {
-    return { error: "Pick a valid category group." };
+    return { error: await apiError("invalidCategoryGroup") };
   }
 
   const isActive = String(formData.get("isActive") ?? "") === "on";
@@ -276,7 +274,7 @@ export async function reorderCategoryGroups(ids: string[]) {
   await requireAdminSession();
 
   const unique = [...new Set(ids.filter(Boolean))];
-  if (unique.length === 0) return { error: "Nothing to reorder." };
+  if (unique.length === 0) return { error: await apiError("nothingToReorder") };
 
   await Promise.all(
     unique.map((id, index) =>
@@ -298,7 +296,7 @@ export async function reorderSubcategories(parentId: string, ids: string[]) {
 
   const unique = [...new Set(ids.filter(Boolean))];
   if (!parentId || unique.length === 0) {
-    return { error: "Nothing to reorder." };
+    return { error: await apiError("nothingToReorder") };
   }
 
   await Promise.all(
@@ -331,12 +329,12 @@ export async function deleteCategory(id: string) {
     .where(eq(categories.id, id))
     .limit(1);
 
-  if (!row) return { error: "That item was not found." };
+  if (!row) return { error: await apiError("itemNotFound") };
 
   const record = toRecord(row);
 
   if (!isCategoryGroup(record) && !isSelectableCategory(record)) {
-    return { error: "That item cannot be deleted." };
+    return { error: await apiError("itemCannotDelete") };
   }
 
   const imageKeys = await db.transaction(async (tx) => {

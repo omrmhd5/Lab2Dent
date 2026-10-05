@@ -4,16 +4,13 @@ import { asc, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { orderFieldValues, orders, universities } from "@/db/schema";
+import { apiError } from "@/i18n/api";
 import { readLocalizedPair } from "@/lib/bilingual";
 import { requireAdminSession } from "@/lib/auth";
-import { getLocale } from "@/lib/locale";
 import { deleteStoredImages } from "@/lib/storage";
 
 async function namesRequired() {
-  const locale = await getLocale();
-  return locale === "ar"
-    ? "الاسم بالإنجليزية والعربية مطلوب."
-    : "English and Arabic names are required.";
+  return apiError("namesRequired");
 }
 
 export async function listUniversities(includeInactive = false) {
@@ -97,7 +94,7 @@ export async function deleteUniversity(id: string) {
     .limit(1);
 
   if (!row) {
-    return { error: "That university was not found." };
+    return { error: await apiError("universityNotFound") };
   }
 
   const imageKeys = await db.transaction(async (tx) => {

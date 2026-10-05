@@ -14,6 +14,7 @@ import {
   universities,
   type OrderStatus,
 } from "@/db/schema";
+import { apiError } from "@/i18n/api";
 import { requireAdminSession, requireStaffSession } from "@/lib/auth";
 import { loadOrderScope } from "@/lib/order-scope";
 import { generateOrderCode } from "@/lib/order-code";
@@ -22,6 +23,7 @@ import {
   deleteStoredImages,
   saveCaseImage,
   savePaymentScreenshot,
+  UploadError,
 } from "@/lib/storage";
 import {
   formatCategoryNames,
@@ -56,15 +58,15 @@ export async function createCase(
   const screenshot = formData.get("screenshot");
 
   if (!name || !phone || !universityId || !categoryId) {
-    return { error: "Fill in every required field." };
+    return { error: await apiError("requiredFields") };
   }
 
   if (!isEgyptianMobile(phone)) {
-    return { error: "Enter an Egyptian mobile number starting with 01." };
+    return { error: await apiError("egyptianMobile") };
   }
 
   if (!(screenshot instanceof File) || screenshot.size === 0) {
-    return { error: "Upload an Instapay screenshot." };
+    return { error: await apiError("uploadScreenshot") };
   }
 
   const [category] = await db
@@ -74,7 +76,7 @@ export async function createCase(
     .limit(1);
 
   if (!category || !isSelectableCategory(category as CategoryRecord)) {
-    return { error: "That service is no longer available." };
+    return { error: await apiError("serviceUnavailable") };
   }
 
   let parent: CategoryRecord | null = null;
@@ -99,7 +101,7 @@ export async function createCase(
     .limit(1);
 
   if (!university) {
-    return { error: "That university is no longer available." };
+    return { error: await apiError("universityUnavailable") };
   }
 
   const fields = await db
@@ -127,10 +129,9 @@ export async function createCase(
       const selected = formData.get(`field_${field.id}`) === "1";
       if (field.required && !selected) {
         return {
-          error:
-            locale === "ar"
-              ? `اختر ${pickLocale(locale, field.label, field.labelAr)}.`
-              : `Select ${field.label}.`,
+          error: await apiError("selectField", {
+            label: pickLocale(locale, field.label, field.labelAr),
+          }),
         };
       }
       if (!selected) continue;
@@ -140,7 +141,7 @@ export async function createCase(
         field.costEgp === null ||
         field.costEgp < 0
       ) {
-        return { error: "That add-on is not configured correctly." };
+        return { error: await apiError("addonMisconfigured") };
       }
       selectedPriceFieldIds.add(field.id);
       answers.push({
@@ -161,19 +162,17 @@ export async function createCase(
       const textValue = String(formData.get(`field_${field.id}`) ?? "").trim();
       if (field.required && !textValue) {
         return {
-          error:
-            locale === "ar"
-              ? `املأ ${pickLocale(locale, field.label, field.labelAr)}.`
-              : `Fill in ${field.label}.`,
+          error: await apiError("fillField", {
+            label: pickLocale(locale, field.label, field.labelAr),
+          }),
         };
       }
       if (!textValue) continue;
       if (field.type === "number" && !isDigitsOnly(textValue)) {
         return {
-          error:
-            locale === "ar"
-              ? `${pickLocale(locale, field.label, field.labelAr)} يجب أن يحتوي على أرقام فقط.`
-              : `${field.label} must contain numbers only.`,
+          error: await apiError("numbersOnly", {
+            label: pickLocale(locale, field.label, field.labelAr),
+          }),
         };
       }
       answers.push({
@@ -194,10 +193,9 @@ export async function createCase(
     const hasFile = file instanceof File && file.size > 0;
     if (field.required && !hasFile) {
       return {
-        error:
-          locale === "ar"
-            ? `ارفع ${pickLocale(locale, field.label, field.labelAr)}.`
-            : `Upload ${field.label}.`,
+        error: await apiError("uploadField", {
+          label: pickLocale(locale, field.label, field.labelAr),
+        }),
       };
     }
     if (!hasFile || !(file instanceof File)) continue;
@@ -218,9 +216,11 @@ export async function createCase(
     } catch (error) {
       return {
         error:
-          error instanceof Error
-            ? error.message
-            : `Could not save ${field.label}.`,
+          error instanceof UploadError
+            ? await apiError(error.code)
+            : await apiError("saveFieldFailed", {
+                label: pickLocale(locale, field.label, field.labelAr),
+              }),
       };
     }
   }
@@ -247,9 +247,9 @@ export async function createCase(
   } catch (error) {
     return {
       error:
-        error instanceof Error
-          ? error.message
-          : "Could not save the screenshot.",
+        error instanceof UploadError
+          ? await apiError(error.code)
+          : await apiError("screenshotSaveFailed"),
     };
   }
 
@@ -313,7 +313,7 @@ export async function createCase(
 
     return { code };
   } catch {
-    return { error: "Could not save the case. Try again." };
+    return { error: await apiError("saveCaseFailed") };
   }
 }
 
@@ -324,14 +324,14 @@ export async function bulkUpdateStatus(
   const session = await requireStaffSession();
   const scope = await loadOrderScope(session.staffId);
 
-  if (!scope) return { error: "You are not allowed to update orders." };
+  if (!scope) return { error: await apiError("ordersForbidden") };
 
   if (orderIds.length === 0) {
-    return { error: "Select at least one order." };
+    return { error: await apiError("selectOrder") };
   }
 
   if (!statusesForRole(scope.role).includes(status)) {
-    return { error: "You cannot set that status." };
+    return { error: await apiError("statusForbidden") };
   }
 
   const existing = await db
@@ -348,12 +348,12 @@ export async function bulkUpdateStatus(
     .where(and(inArray(orders.id, orderIds), scope.condition));
 
   if (existing.length !== orderIds.length) {
-    return { error: "Those orders are outside your assignment." };
+    return { error: await apiError("ordersOutOfScope") };
   }
 
   const toUpdate = existing.filter((order) => order.status !== status);
   if (toUpdate.length === 0) {
-    return { error: "Those orders already have that status." };
+    return { error: await apiError("statusUnchanged") };
   }
 
   const idsToUpdate = toUpdate.map((order) => order.id);
@@ -407,11 +407,11 @@ export async function assignOrderToLab(orderId: string, labStaffId: string) {
   const scope = await loadOrderScope(session.staffId);
 
   if (!scope || scope.role === "lab") {
-    return { error: "You are not allowed to assign labs." };
+    return { error: await apiError("assignForbidden") };
   }
 
   if (!orderId || !labStaffId) {
-    return { error: "Choose a lab." };
+    return { error: await apiError("chooseLab") };
   }
 
   const [lab] = await db
@@ -426,7 +426,7 @@ export async function assignOrderToLab(orderId: string, labStaffId: string) {
     )
     .limit(1);
 
-  if (!lab) return { error: "That lab account was not found." };
+  if (!lab) return { error: await apiError("labNotFound") };
 
   const [order] = await db
     .select({
@@ -443,9 +443,9 @@ export async function assignOrderToLab(orderId: string, labStaffId: string) {
     .where(and(eq(orders.id, orderId), scope.condition))
     .limit(1);
 
-  if (!order) return { error: "That order was not found." };
+  if (!order) return { error: await apiError("orderNotFound") };
   if (order.assignedLabId === lab.id && order.status === "sent_to_lab") {
-    return { error: "This order is already assigned to that lab." };
+    return { error: await apiError("alreadyAssigned") };
   }
 
   const nextStatus = "sent_to_lab" as const;
@@ -487,7 +487,7 @@ export async function deleteOrders(orderIds: string[]) {
   await requireAdminSession();
 
   if (orderIds.length === 0) {
-    return { error: "Select at least one order." };
+    return { error: await apiError("selectOrder") };
   }
 
   const imageKeys = await db.transaction(async (tx) => {

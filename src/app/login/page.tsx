@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DemoBanner } from "@/components/demo-banner";
 import { LoginForm } from "@/components/login-form";
 import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -31,7 +32,9 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="grid min-h-dvh md:grid-cols-2">
+    <div className="flex min-h-dvh flex-col">
+      <DemoBanner label={messages.demoBanner} />
+      <main className="grid min-h-0 flex-1 md:grid-cols-2">
       <section className="relative hidden overflow-hidden bg-brand-solid md:block">
         <div className="absolute inset-0 bg-[url('/hero.jpg')] bg-cover bg-center opacity-40" />
         <div className="relative flex h-full flex-col justify-between p-10 text-on-brand">
@@ -46,7 +49,7 @@ export default async function LoginPage({
           </div>
         </div>
       </section>
-      <section className="flex flex-col px-4 py-6 sm:px-8">
+      <section id="login-panel" className="flex flex-col px-4 py-6 sm:px-8">
         <div className="flex items-center justify-between md:justify-end">
           <span className="md:hidden">
             <BrandMark label={messages.brand} href="/" />
@@ -73,8 +76,38 @@ export default async function LoginPage({
               {messages.navHome}
             </Link>
           </p>
+          <aside className="mt-6 rounded-2xl border border-dashed border-border bg-brand-soft/50 px-4 py-4">
+            <p className="text-sm font-bold">{messages.demoTitle}</p>
+            <dl className="mt-3 space-y-3 text-sm">
+              <div>
+                <dt className="text-muted">{messages.demoAdmin}</dt>
+                <dd className="mt-0.5 break-all font-mono">
+                  admin@admin.com
+                  <span className="mx-2 text-muted">/</span>
+                  admin123
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{messages.demoEmployee}</dt>
+                <dd className="mt-0.5 break-all font-mono">
+                  employee@employee.com
+                  <span className="mx-2 text-muted">/</span>
+                  employee123
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{messages.demoLab}</dt>
+                <dd className="mt-0.5 break-all font-mono">
+                  lab@lab.com
+                  <span className="mx-2 text-muted">/</span>
+                  lab123
+                </dd>
+              </div>
+            </dl>
+          </aside>
         </div>
       </section>
     </main>
+    </div>
   );
 }

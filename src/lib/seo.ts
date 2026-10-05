@@ -38,14 +38,14 @@ export function buildPageMetadata(
   options: PageMetadataOptions = {},
 ): Metadata {
   const siteUrl = getSiteUrl();
-  const pageCopy = seoCopy[locale].pages[page];
+  const pageCopy = seoCopy(locale).pages[page];
   const title = options.title ?? pageCopy.title;
   const description = options.description ?? pageCopy.description;
   const path = options.path ?? pageCopy.path;
   const keywords = options.keywords ?? pageCopy.keywords;
   const noIndex = options.noIndex ?? pageCopy.noIndex ?? false;
   const url = `${siteUrl}${path}`;
-  const social = buildSocialImages(seoCopy[locale].default.ogImageAlt);
+  const social = buildSocialImages(seoCopy(locale).default.ogImageAlt);
 
   const metadata: Metadata = {
     title: page === "home" ? { absolute: title } : title,
@@ -84,7 +84,7 @@ export function buildPageMetadata(
 }
 
 export function buildRootMetadata(locale: Locale): Metadata {
-  const copy = seoCopy[locale].default;
+  const copy = seoCopy(locale).default;
   const social = buildSocialImages(copy.ogImageAlt);
 
   return {
@@ -138,7 +138,7 @@ export function buildRootMetadata(locale: Locale): Metadata {
 }
 
 export function buildTrackCodeMetadata(locale: Locale, code: string): Metadata {
-  const pageCopy = seoCopy[locale].pages.trackCode;
+  const pageCopy = seoCopy(locale).pages.trackCode;
 
   return buildPageMetadata(locale, "trackCode", {
     path: `/track/${encodeURIComponent(code)}`,

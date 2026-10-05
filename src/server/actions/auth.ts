@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { staff } from "@/db/schema";
+import { apiError } from "@/i18n/api";
 import { getSessionOptions, type SessionData } from "@/lib/session";
 
 export type LoginState = {
@@ -21,7 +22,7 @@ export async function loginStaff(
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    return { error: "Email and password are required." };
+    return { error: await apiError("emailPasswordRequired") };
   }
 
   const [member] = await db
@@ -31,13 +32,13 @@ export async function loginStaff(
     .limit(1);
 
   if (!member || !member.isActive) {
-    return { error: "Invalid email or password." };
+    return { error: await apiError("invalidCredentials") };
   }
 
   const isValid = await bcrypt.compare(password, member.passwordHash);
 
   if (!isValid) {
-    return { error: "Invalid email or password." };
+    return { error: await apiError("invalidCredentials") };
   }
 
   const session = await getIronSession<SessionData>(

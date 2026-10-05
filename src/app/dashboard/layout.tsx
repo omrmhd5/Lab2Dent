@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { DemoBanner } from "@/components/demo-banner";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { DashboardEnter } from "@/components/dashboard-enter";
 import { DashboardI18n } from "@/components/dashboard-i18n";
 import { getDash } from "@/i18n/dashboard";
+import { getMessages } from "@/i18n/messages";
 import { requireStaffSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale";
 import { buildPageMetadata } from "@/lib/seo";
@@ -22,18 +24,22 @@ export default async function AdminLayout({
     getLocale(),
   ]);
   const copy = getDash(locale);
+  const messages = getMessages(locale);
 
   return (
     <DashboardI18n copy={copy}>
-      <div className="flex min-h-dvh flex-col bg-background md:h-dvh md:flex-row md:overflow-hidden">
-        <AdminNav
-          role={session.role}
-          name={session.name}
-          email={session.email}
-        />
-        <div className="min-h-0 min-w-0 flex-1 md:overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 md:py-8">
-            <DashboardEnter>{children}</DashboardEnter>
+      <div className="flex min-h-dvh flex-col bg-background md:h-dvh md:overflow-hidden">
+        <DemoBanner label={messages.demoBanner} />
+        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+          <AdminNav
+            role={session.role}
+            name={session.name}
+            email={session.email}
+          />
+          <div className="min-h-0 min-w-0 flex-1 md:overflow-y-auto">
+            <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 md:py-8">
+              <DashboardEnter>{children}</DashboardEnter>
+            </div>
           </div>
         </div>
       </div>

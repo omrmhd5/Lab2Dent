@@ -6,13 +6,22 @@ import { del, get, put } from "@vercel/blob";
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+export class UploadError extends Error {
+  readonly code: "imageType" | "imageSize";
+
+  constructor(code: "imageType" | "imageSize") {
+    super(code);
+    this.code = code;
+  }
+}
+
 export function assertPaymentImage(file: File) {
   if (!ALLOWED_TYPES.has(file.type)) {
-    throw new Error("Upload a JPG, PNG, or WebP image.");
+    throw new UploadError("imageType");
   }
 
   if (file.size > MAX_BYTES) {
-    throw new Error("Image must be 5 MB or smaller.");
+    throw new UploadError("imageSize");
   }
 }
 

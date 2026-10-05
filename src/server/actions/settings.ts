@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
+import { apiError } from "@/i18n/api";
 import { requireAdminSession } from "@/lib/auth";
 import { getInstapayConfig } from "@/lib/settings";
 import { normalizeInstapayLink } from "@/lib/instapay";
@@ -19,7 +20,7 @@ export async function updateInstapaySettings(formData: FormData) {
   const normalized = normalizeInstapayLink(linkRaw);
 
   if ("error" in normalized) {
-    return { error: normalized.error };
+    return { error: await apiError(normalized.error) };
   }
 
   const [existing] = await db

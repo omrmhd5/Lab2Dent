@@ -8,11 +8,11 @@ import {
   categoryFields,
   type CategoryFieldType,
 } from "@/db/schema";
+import { apiError } from "@/i18n/api";
 import { isSelectableCategory, type CategoryRecord } from "@/lib/categories";
 import { readLocalizedPair } from "@/lib/bilingual";
 import { requireAdminSession } from "@/lib/auth";
 import { digitsOnly, isDigitsOnly } from "@/lib/numeric-input";
-import { getLocale } from "@/lib/locale";
 
 async function revalidateFields(categoryId: string) {
   const subcategory = await requireSubcategory(categoryId);
@@ -39,10 +39,7 @@ async function requireSubcategory(categoryId: string) {
 }
 
 async function labelsRequired() {
-  const locale = await getLocale();
-  return locale === "ar"
-    ? "التسمية بالإنجليزية والعربية مطلوبة."
-    : "English and Arabic labels are required.";
+  return apiError("labelsRequired");
 }
 
 function parseType(value: FormDataEntryValue | null): CategoryFieldType | null {
@@ -71,17 +68,11 @@ function parseFieldAmountEgp(
 }
 
 async function priceRequiredError() {
-  const locale = await getLocale();
-  return locale === "ar"
-    ? "أدخل مبلغ الإضافة بالجنيه."
-    : "Enter the add-on price in EGP.";
+  return apiError("priceRequired");
 }
 
 async function costRequiredError() {
-  const locale = await getLocale();
-  return locale === "ar"
-    ? "أدخل تكلفة الإضافة بالجنيه."
-    : "Enter the add-on cost in EGP.";
+  return apiError("costRequired");
 }
 
 async function nextSortOrder(categoryId: string) {
@@ -135,7 +126,7 @@ export async function createCategoryField(formData: FormData) {
   }
 
   const subcategory = await requireSubcategory(categoryId);
-  if (!subcategory) return { error: "Pick a subcategory." };
+  if (!subcategory) return { error: await apiError("pickSubcategory") };
 
   await db.insert(categoryFields).values({
     categoryId,
@@ -183,7 +174,7 @@ export async function updateCategoryField(formData: FormData) {
   }
 
   const subcategory = await requireSubcategory(categoryId);
-  if (!subcategory) return { error: "Pick a subcategory." };
+  if (!subcategory) return { error: await apiError("pickSubcategory") };
 
   await db
     .update(categoryFields)
@@ -208,7 +199,7 @@ export async function deleteCategoryField(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "").trim();
 
-  if (!id || !categoryId) return { error: "Missing field." };
+  if (!id || !categoryId) return { error: await apiError("missingField") };
 
   await db.delete(categoryFields).where(eq(categoryFields.id, id));
 
