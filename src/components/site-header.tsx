@@ -18,7 +18,7 @@ export function SiteHeader({
         {messages.skipToContent}
       </a>
       <div id="site-chrome" className="sticky top-0 z-20">
-        <DemoBanner label={messages.demoBanner} />
+        <DemoBanner demo={messages.demoBanner} wake={messages.demoBannerWake} />
         <header className="border-b border-border/80 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 px-4 py-3 sm:px-6 md:h-[72px] md:flex-row md:items-center md:justify-between md:py-0">
           <div className="flex items-center justify-between gap-2">

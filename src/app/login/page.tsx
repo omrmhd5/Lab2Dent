@@ -33,7 +33,7 @@ export default async function LoginPage({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <DemoBanner label={messages.demoBanner} />
+      <DemoBanner demo={messages.demoBanner} wake={messages.demoBannerWake} />
       <main className="grid min-h-0 flex-1 md:grid-cols-2">
       <section className="relative hidden overflow-hidden bg-brand-solid md:block">
         <div className="absolute inset-0 bg-[url('/hero.jpg')] bg-cover bg-center opacity-40" />

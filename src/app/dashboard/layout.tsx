@@ -29,7 +29,7 @@ export default async function AdminLayout({
   return (
     <DashboardI18n copy={copy}>
       <div className="flex min-h-dvh flex-col bg-background md:h-dvh md:overflow-hidden">
-        <DemoBanner label={messages.demoBanner} />
+        <DemoBanner demo={messages.demoBanner} wake={messages.demoBannerWake} />
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <AdminNav
             role={session.role}

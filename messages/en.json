@@ -82,6 +82,7 @@
     "demoEmployee": "Employee",
     "demoLab": "Lab",
     "demoBanner": "DEMO MODE",
+    "demoBannerWake": "First load after idle may take a few seconds.",
     "demoTrackTitle": "Try a demo code",
     "demoTrackHint": "Enter one of these codes to test tracking."
   },
