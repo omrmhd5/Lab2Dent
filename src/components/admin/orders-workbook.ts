@@ -24,10 +24,11 @@ const MONEY = "FF134E4A";
 
 const STATUS_FILL: Record<OrderStatus, { fill: string; ink: string }> = {
   pending: { fill: "FFFEF3C7", ink: "FF92400E" },
-  confirmed: { fill: "FFD1FAE5", ink: "FF065F46" },
+  confirmed: { fill: "FFE0F2FE", ink: "FF0369A1" },
   sent_to_lab: { fill: "FFEDE9FE", ink: "FF5B21B6" },
   in_lab: { fill: "FFEDE9FE", ink: "FF5B21B6" },
   ready: { fill: "FFD1FAE5", ink: "FF047857" },
+  done: { fill: "FFD1FAE5", ink: "FF065F46" },
   delivered: { fill: "FFD1FAE5", ink: "FF047857" },
   rejected: { fill: "FFFEE2E2", ink: "FFB91C1C" },
 };
