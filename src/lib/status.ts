@@ -6,6 +6,7 @@ export const WORKFLOW_STATUSES: OrderStatus[] = [
   "sent_to_lab",
   "rejected",
   "ready",
+  "done",
 ];
 
 export const ORDER_STATUSES = WORKFLOW_STATUSES;
@@ -16,13 +17,14 @@ export const STATUS_LABELS: Record<OrderStatus, { en: string; ar: string }> = {
   sent_to_lab: { en: "Assigned to lab", ar: "مُسند للمعمل" },
   in_lab: { en: "Assigned to lab", ar: "مُسند للمعمل" },
   ready: { en: "Ready", ar: "جاهز" },
+  done: { en: "Done", ar: "مكتمل" },
   delivered: { en: "Ready", ar: "جاهز" },
   rejected: { en: "Rejected", ar: "مرفوض" },
 };
 
 export function statusesForRole(role: StaffRole): OrderStatus[] {
   if (role === "admin") {
-    return ["pending", "confirmed", "rejected", "ready"];
+    return ["pending", "confirmed", "rejected", "ready", "done"];
   }
   if (role === "employee") {
     return ["confirmed", "rejected"];
@@ -62,20 +64,22 @@ export function statusLabel(
 
 const STATUS_BADGE_CLASSES: Record<OrderStatus, string> = {
   pending: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
-  confirmed: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
+  confirmed: "bg-sky-500/15 text-sky-900 dark:text-sky-200",
   sent_to_lab: "bg-violet-500/15 text-violet-800 dark:text-violet-300",
   in_lab: "bg-violet-500/15 text-violet-800 dark:text-violet-300",
   ready: "bg-accent-soft text-accent",
+  done: "bg-emerald-500/15 text-emerald-900 dark:text-emerald-200",
   delivered: "bg-accent-soft text-accent",
   rejected: "bg-danger/10 text-danger",
 };
 
 const STATUS_DOT_CLASSES: Record<OrderStatus, string> = {
   pending: "bg-amber-500",
-  confirmed: "bg-emerald-500",
+  confirmed: "bg-sky-600",
   sent_to_lab: "bg-violet-500",
   in_lab: "bg-violet-500",
   ready: "bg-accent",
+  done: "bg-emerald-600",
   delivered: "bg-accent",
   rejected: "bg-danger",
 };

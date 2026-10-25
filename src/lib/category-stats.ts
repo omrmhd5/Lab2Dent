@@ -12,6 +12,7 @@ const PAYMENT_CONFIRMED_STATUSES = new Set<OrderStatus>([
   "sent_to_lab",
   "in_lab",
   "ready",
+  "done",
   "delivered",
 ]);
 

@@ -27,6 +27,7 @@ export const orderStatusEnum = pgEnum("order_status", [
   "sent_to_lab",
   "in_lab",
   "ready",
+  "done",
   "delivered",
   "rejected",
 ]);
