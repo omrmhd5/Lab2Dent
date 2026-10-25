@@ -8,7 +8,7 @@ import { getDash } from "@/i18n/dashboard";
 import { requireStaffSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale";
 import { ORDER_STATUSES, STATUS_LABELS, statusesForRole } from "@/lib/status";
-import { listOrders } from "@/server/actions/orders";
+import { listLabStaff, listOrders } from "@/server/actions/orders";
 import { listUniversities } from "@/server/actions/universities";
 
 export default async function AdminOrdersPage({
@@ -31,13 +31,14 @@ export default async function AdminOrdersPage({
   const isLab = session.role === "lab";
   const statusOptions = ORDER_STATUSES;
 
-  const [orders, universities] = await Promise.all([
+  const [orders, universities, labs] = await Promise.all([
     listOrders({
       status: selectedStatus,
       q,
       universityId: isLab ? "all" : selectedUniversity,
     }),
     isLab ? Promise.resolve([]) : listUniversities(true),
+    isLab ? Promise.resolve([]) : listLabStaff(),
   ]);
 
   return (
@@ -78,7 +79,9 @@ export default async function AdminOrdersPage({
             })),
           ]}
         />
-        <SubmitButton className="ui-press ui-btn ui-btn-primary">{t.filter}</SubmitButton>
+        <SubmitButton className="ui-press ui-btn ui-btn-primary">
+          {t.filter}
+        </SubmitButton>
         <OrdersExportButton orders={orders} role={session.role} />
       </form>
       <div className="mt-6">
@@ -86,6 +89,7 @@ export default async function AdminOrdersPage({
           orders={orders}
           role={session.role}
           allowedStatuses={statusesForRole(session.role)}
+          labs={labs}
         />
       </div>
     </div>
