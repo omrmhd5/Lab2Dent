@@ -3,7 +3,7 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { revalidatePath } from "next/cache";
-import { db } from "@/db";
+import { db, type Database } from "@/db";
 import {
   categories,
   categoryFields,
@@ -402,18 +402,58 @@ export async function listLabStaff() {
     .orderBy(asc(staff.name));
 }
 
-export async function assignOrderToLab(orderId: string, labStaffId: string) {
-  const session = await requireStaffSession();
-  const scope = await loadOrderScope(session.staffId);
+type AssignableOrder = {
+  id: string;
+  status: OrderStatus;
+  assignedLabId: string | null;
+  categoryId: string | null;
+  priceEgp: number;
+  statsCostEgp: number | null;
+  statsProfitEgp: number | null;
+};
 
-  if (!scope || scope.role === "lab") {
-    return { error: await apiError("assignForbidden") };
+async function assignOrderToLabInTransaction(
+  tx: Database,
+  order: AssignableOrder,
+  lab: { id: string; name: string },
+  staffId: string,
+) {
+  const nextStatus = "sent_to_lab" as const;
+
+  if (order.assignedLabId === lab.id && order.status === nextStatus) {
+    return false;
   }
 
-  if (!orderId || !labStaffId) {
-    return { error: await apiError("chooseLab") };
+  if (order.status !== nextStatus) {
+    await applyOrderStatusStatsTransition(
+      tx,
+      order,
+      order.status,
+      nextStatus,
+    );
   }
 
+  await tx
+    .update(orders)
+    .set({
+      assignedLabId: lab.id,
+      status: nextStatus,
+      lastStatusByStaffId: staffId,
+      updatedAt: new Date(),
+    })
+    .where(eq(orders.id, order.id));
+
+  await tx.insert(orderEvents).values({
+    orderId: order.id,
+    status: nextStatus,
+    note: `Assigned to ${lab.name}`,
+    staffId,
+  });
+
+  return true;
+}
+
+async function resolveLabForAssignment(labStaffId: string) {
   const [lab] = await db
     .select({ id: staff.id, name: staff.name })
     .from(staff)
@@ -426,6 +466,22 @@ export async function assignOrderToLab(orderId: string, labStaffId: string) {
     )
     .limit(1);
 
+  return lab ?? null;
+}
+
+export async function assignOrderToLab(orderId: string, labStaffId: string) {
+  const session = await requireStaffSession();
+  const scope = await loadOrderScope(session.staffId);
+
+  if (!scope || scope.role === "lab") {
+    return { error: await apiError("assignForbidden") };
+  }
+
+  if (!orderId || !labStaffId) {
+    return { error: await apiError("chooseLab") };
+  }
+
+  const lab = await resolveLabForAssignment(labStaffId);
   if (!lab) return { error: await apiError("labNotFound") };
 
   const [order] = await db
@@ -444,43 +500,91 @@ export async function assignOrderToLab(orderId: string, labStaffId: string) {
     .limit(1);
 
   if (!order) return { error: await apiError("orderNotFound") };
-  if (order.assignedLabId === lab.id && order.status === "sent_to_lab") {
-    return { error: await apiError("alreadyAssigned") };
-  }
 
-  const nextStatus = "sent_to_lab" as const;
+  let updated = false;
 
   await db.transaction(async (tx) => {
-    if (order.status !== nextStatus) {
-      await applyOrderStatusStatsTransition(
-        tx,
-        order,
-        order.status,
-        nextStatus,
-      );
-    }
-
-    await tx
-      .update(orders)
-      .set({
-        assignedLabId: lab.id,
-        status: nextStatus,
-        lastStatusByStaffId: session.staffId,
-        updatedAt: new Date(),
-      })
-      .where(eq(orders.id, order.id));
-
-    await tx.insert(orderEvents).values({
-      orderId: order.id,
-      status: nextStatus,
-      note: `Assigned to ${lab.name}`,
-      staffId: session.staffId,
-    });
+    updated = await assignOrderToLabInTransaction(
+      tx,
+      order,
+      lab,
+      session.staffId,
+    );
   });
+
+  if (!updated) {
+    return { error: await apiError("alreadyAssigned") };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/orders/${orderId}`);
   return { ok: true as const };
+}
+
+export async function bulkAssignOrdersToLab(
+  orderIds: string[],
+  labStaffId: string,
+) {
+  const session = await requireStaffSession();
+  const scope = await loadOrderScope(session.staffId);
+
+  if (!scope || scope.role === "lab") {
+    return { error: await apiError("assignForbidden") };
+  }
+
+  if (orderIds.length === 0) {
+    return { error: await apiError("selectOrder") };
+  }
+
+  if (!labStaffId) {
+    return { error: await apiError("chooseLab") };
+  }
+
+  const lab = await resolveLabForAssignment(labStaffId);
+  if (!lab) return { error: await apiError("labNotFound") };
+
+  const existing = await db
+    .select({
+      id: orders.id,
+      status: orders.status,
+      assignedLabId: orders.assignedLabId,
+      categoryId: orders.categoryId,
+      priceEgp: orders.priceEgp,
+      statsCostEgp: orders.statsCostEgp,
+      statsProfitEgp: orders.statsProfitEgp,
+    })
+    .from(orders)
+    .leftJoin(categories, eq(orders.categoryId, categories.id))
+    .where(and(inArray(orders.id, orderIds), scope.condition));
+
+  if (existing.length !== orderIds.length) {
+    return { error: await apiError("ordersOutOfScope") };
+  }
+
+  let updatedCount = 0;
+
+  await db.transaction(async (tx) => {
+    for (const order of existing) {
+      const updated = await assignOrderToLabInTransaction(
+        tx,
+        order,
+        lab,
+        session.staffId,
+      );
+      if (updated) updatedCount += 1;
+    }
+  });
+
+  if (updatedCount === 0) {
+    return { error: await apiError("bulkAlreadyAssigned") };
+  }
+
+  revalidatePath("/dashboard");
+  for (const order of existing) {
+    revalidatePath(`/dashboard/orders/${order.id}`);
+  }
+
+  return { ok: true as const, updatedCount };
 }
 
 export async function deleteOrders(orderIds: string[]) {

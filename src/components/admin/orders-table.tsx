@@ -13,7 +13,11 @@ import {
   ConfirmDeleteButton,
   DeleteIconButton,
 } from "@/components/admin/icon-action-buttons";
-import { bulkUpdateStatus, deleteOrders } from "@/server/actions/orders";
+import {
+  bulkAssignOrdersToLab,
+  bulkUpdateStatus,
+  deleteOrders,
+} from "@/server/actions/orders";
 import { SelectMenu } from "@/components/select-menu";
 import { Spinner } from "@/components/spinner";
 import { pickLocale } from "@/lib/bilingual";
@@ -162,15 +166,18 @@ export function OrdersTable({
   orders,
   role,
   allowedStatuses,
+  labs = [],
 }: {
   orders: OrderRow[];
   role: StaffRole;
   allowedStatuses: OrderStatus[];
+  labs?: { id: string; name: string }[];
 }) {
   const t = useDash();
   const showPrice = role !== "lab";
   const showMoney = role === "admin";
   const canDelete = role === "admin";
+  const canAssignLab = role !== "lab" && labs.length > 0;
   const columnCount =
     7 + (showPrice ? 1 : 0) + (showMoney ? 2 : 0) + (canDelete ? 1 : 0);
   const router = useRouter();
@@ -179,8 +186,11 @@ export function OrdersTable({
     allowedStatuses[0] ?? "confirmed",
   );
   const [pending, start] = useTransition();
+  const [assignPending, startAssign] = useTransition();
   const [deletePending, startDelete] = useTransition();
+  const [labId, setLabId] = useState(labs[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [assignError, setAssignError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -219,6 +229,16 @@ export function OrdersTable({
       setStatus(bulkStatusOptions[0]);
     }
   }, [bulkStatusOptions, status]);
+
+  useEffect(() => {
+    if (labs.length === 0) {
+      setLabId("");
+      return;
+    }
+    if (!labs.some((lab) => lab.id === labId)) {
+      setLabId(labs[0].id);
+    }
+  }, [labs, labId]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -297,6 +317,40 @@ export function OrdersTable({
             {pending ? <Spinner /> : null}
             {t.updateStatusButton}
           </button>
+          {canAssignLab ? (
+            <>
+              <SelectMenu
+                className="w-full sm:w-72"
+                ariaLabel={t.assignLab}
+                value={labId}
+                onChange={setLabId}
+                options={labs.map((lab) => ({
+                  value: lab.id,
+                  label: lab.name,
+                }))}
+              />
+              <button
+                type="button"
+                disabled={assignPending || !labId}
+                className="ui-press ui-btn ui-btn-primary w-full sm:w-auto"
+                onClick={() => {
+                  startAssign(async () => {
+                    setAssignError(null);
+                    const result = await bulkAssignOrdersToLab(selected, labId);
+                    reportAction(result, t.labsAssigned);
+                    if (result && "error" in result && result.error) {
+                      setAssignError(result.error);
+                      return;
+                    }
+                    setSelected([]);
+                    router.refresh();
+                  });
+                }}>
+                {assignPending ? <Spinner /> : null}
+                {t.assignSelectedToLab}
+              </button>
+            </>
+          ) : null}
           {canDelete ? (
             <DeleteIconButton
               label={fill(t.deleteSelectedOrders, {
@@ -317,6 +371,9 @@ export function OrdersTable({
             />
           ) : null}
           {error ? <p className="text-sm text-danger">{error}</p> : null}
+          {assignError ? (
+            <p className="text-sm text-danger">{assignError}</p>
+          ) : null}
         </div>
       ) : null}
       <div className="space-y-3 md:hidden">
